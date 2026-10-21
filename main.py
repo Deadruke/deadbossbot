@@ -45,14 +45,20 @@ def get_main_keyboard():
     )
 
 
+def get_private_welcome_text():
+    return (
+        "Привет! Я DeadBossBot.\n\n"
+        "Я умею:\n"
+        "• улучшать качество видео\n"
+        "• добавлять субтитры\n"
+        "• держать тебя в курсе статуса обработки\n\n"
+        "Нажми /start, выбери действие в меню или просто отправь видео."
+    )
+
+
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    await message.answer(
-        "Привет! Я DeadBossBot.\n\n"
-        "Отправь видео, и я помогу его улучшить или добавить субтитры.\n"
-        "Этот билд уже запущен и готов к работе.",
-        reply_markup=get_main_keyboard(),
-    )
+    await message.answer(get_private_welcome_text(), reply_markup=get_main_keyboard())
 
 
 @dp.message(Command("help"))
@@ -101,6 +107,31 @@ async def btn_pro(message: Message):
 @dp.message(F.text == "👤 Профиль")
 async def btn_profile(message: Message):
     await cmd_profile(message)
+
+
+@dp.message(F.chat.type == "private", F.text == "")
+async def empty_private_message(message: Message):
+    await message.answer(
+        get_private_welcome_text(),
+        reply_markup=get_main_keyboard(),
+    )
+
+
+@dp.message(F.chat.type == "private")
+async def private_fallback(message: Message):
+    if message.text is None or message.text.strip() == "":
+        await message.answer(get_private_welcome_text(), reply_markup=get_main_keyboard())
+        return
+
+    if message.text.strip().lower() in {"hello", "hi", "привет", "ку", "start"}:
+        await message.answer(get_private_welcome_text(), reply_markup=get_main_keyboard())
+        return
+
+    await message.answer(
+        "Я готов помочь с видео.\n\n"
+        "Выбери нужный пункт в меню или отправь видео напрямую.",
+        reply_markup=get_main_keyboard(),
+    )
 
 
 @dp.message(F.content_type.in_({"video", "document"}))
