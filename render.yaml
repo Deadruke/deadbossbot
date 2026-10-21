@@ -1,0 +1,9 @@
+services:
+  - type: worker
+    name: clip-bot
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
