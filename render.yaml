@@ -1,9 +1,23 @@
-services:
-  - type: worker
-    name: clip-bot
-    runtime: docker
-    plan: starter
-    dockerfilePath: ./Dockerfile
-    envVars:
-      - key: BOT_TOKEN
-        sync: false
+# DeadBossBot
+
+Telegram bot project.
+
+## Stack
+- Python
+- python-telegram-bot
+- ffmpeg
+- faster-whisper
+- numpy
+
+## Structure
+- `bot.py` - main bot logic
+- `requirements.txt` - Python dependencies
+- `Dockerfile` - container config
+- `render.yaml` - Render deploy config
+- `assets/` - banner/video assets
+
+## Deploy
+1. Add `BOT_TOKEN` in Render environment variables.
+2. Connect this repository to Render.
+3. Push code and deploy.
+4. Put a banner file in `assets/` named like `banner.mp4`.
