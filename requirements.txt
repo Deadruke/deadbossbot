@@ -1,14 +1,5 @@
-services:
-  - type: web
-    name: deadbossbot
-    runtime: docker
-    plan: free
-    dockerfilePath: ./Dockerfile
-    healthCheckPath: /health
-    envVars:
-      - key: BOT_TOKEN
-        sync: false
-      - key: ADMIN_ID
-        sync: false
-      - key: PORT
-        value: "10000"
+aiogram>=3.10,<4.0
+Flask>=3.0,<4.0
+faster-whisper
+numpy
+pytest
