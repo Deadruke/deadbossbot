@@ -5,8 +5,9 @@ import sqlite3
 import time
 import traceback
 from datetime import datetime, timedelta, timezone
+from multiprocessing import Process
 from pathlib import Path
-from threading import Lock, Thread
+from threading import Lock
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
@@ -173,7 +174,7 @@ def remove_pro_for_user(user_id: int):
 
 def get_user_by_username_or_id(identifier: str):
     with db_connect() as conn:
-        if str(identifier).startswith("@"): 
+        if str(identifier).startswith("@"):
             identifier = identifier[1:]
         user = conn.execute(
             "SELECT user_id, username, first_name, pro_until, is_blocked FROM users WHERE user_id = ? OR username = ? LIMIT 1",
@@ -432,7 +433,8 @@ async def admin_callbacks(callback: CallbackQuery):
 
     action = callback.data
     if action == "admin:stats":
-        await admin_panel(callback.message) if callback.message else None
+        if callback.message:
+            await admin_panel(callback.message)
     elif action == "admin:toggle_processing":
         current = get_setting("processing_enabled", "1")
         new = "0" if current == "1" else "1"
@@ -509,7 +511,6 @@ async def private_fallback(message: Message):
         await message.answer(get_private_welcome_text(), reply_markup=get_main_keyboard())
         return
 
-    # Don't spam the welcome text after every user message. Only show when text is clearly a greeting.
     if message.text.strip().lower() in {"help", "/help"}:
         await cmd_help(message)
         return
@@ -560,10 +561,12 @@ async def bot_main():
         raise
 
 
+def run_bot_process():
+    asyncio.run(bot_main())
+
+
 def run_bot_in_thread():
-    thread = Thread(target=lambda: asyncio.run(bot_main()), daemon=True)
-    thread.start()
-    return thread
+    return None
 
 
 if __name__ == "__main__":
@@ -571,7 +574,8 @@ if __name__ == "__main__":
         if not BOT_TOKEN:
             raise RuntimeError("BOT_TOKEN is not set. Add BOT_TOKEN to Render Environment Variables.")
 
-        run_bot_in_thread()
+        process = Process(target=run_bot_process, daemon=True)
+        process.start()
         app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
     except Exception as exc:
         log.exception("Application startup failed")
