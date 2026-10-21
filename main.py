@@ -4,12 +4,17 @@ import os
 from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F
+from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
+try:
+    ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
+except ValueError as exc:
+    raise RuntimeError("ADMIN_ID must be a number. Example: ADMIN_ID=123456789") from exc
+
 BASE_DIR = Path(__file__).resolve().parent
 ASSETS_DIR = BASE_DIR / "assets"
 ASSETS_DIR.mkdir(exist_ok=True)
@@ -17,7 +22,10 @@ ASSETS_DIR.mkdir(exist_ok=True)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("deadbossbot")
 
-bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN is not set. Add BOT_TOKEN to Render Environment Variables.")
+
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 
 
@@ -42,8 +50,7 @@ async def cmd_start(message: Message):
     await message.answer(
         "Привет! Я DeadBossBot.\n\n"
         "Отправь видео, и я помогу его улучшить или добавить субтитры.\n"
-        "В этом проекте бот уже запущен и готов к работе."
-        ,
+        "Этот билд уже запущен и готов к работе.",
         reply_markup=get_main_keyboard(),
     )
 
@@ -114,9 +121,6 @@ async def handle_media(message: Message):
 
 
 async def main():
-    if not BOT_TOKEN:
-        raise RuntimeError("BOT_TOKEN is not set. Add BOT_TOKEN to Render environment variables.")
-
     log.info("Starting DeadBossBot...")
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
