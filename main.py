@@ -62,6 +62,10 @@ dp = Dispatcher()
 app = Flask(__name__)
 last_admin_alerts: dict[str, float] = {}
 ALERT_COOLDOWN_SECONDS = 300
+MODEL_CACHE = {}
+MODEL_LOCK = threading.Lock()
+SUBTITLE_FONTS = {"sans": "DejaVu Sans", "serif": "DejaVu Serif", "mono": "DejaVu Sans Mono", "liberation": "Liberation Sans"}
+SUBTITLE_COLORS = {"white": ("Белый", "&H00FFFFFF"), "yellow": ("Жёлтый", "&H0000FFFF"), "cyan": ("Голубой", "&H00FFFF00"), "green": ("Зелёный", "&H0000FF00"), "pink": ("Розовый", "&H00FF00FF")}
 
 
 def now_text() -> str:
@@ -101,6 +105,10 @@ def ensure_db():
         CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
         CREATE TABLE IF NOT EXISTS user_states (
             user_id INTEGER PRIMARY KEY, action TEXT, updated_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS user_preferences (
+            user_id INTEGER PRIMARY KEY, subtitle_font TEXT NOT NULL DEFAULT 'sans',
+            subtitle_color TEXT NOT NULL DEFAULT 'white'
         );
         INSERT OR IGNORE INTO settings(key, value) VALUES ('processing_enabled', '1');
         """)
@@ -162,6 +170,45 @@ def set_pro_for_user(user_id: int, days: int = PRO_DAYS):
         conn.commit()
 
 
+def get_subtitle_preferences(user_id: int) -> tuple[str, str]:
+    with db_connect() as conn:
+        row = conn.execute("SELECT subtitle_font, subtitle_color FROM user_preferences WHERE user_id=?", (user_id,)).fetchone()
+    if not row:
+        return "sans", "white"
+    font = row["subtitle_font"] if row["subtitle_font"] in SUBTITLE_FONTS else "sans"
+    color = row["subtitle_color"] if row["subtitle_color"] in SUBTITLE_COLORS else "white"
+    return font, color
+
+
+def set_subtitle_preference(user_id: int, key: str, value: str):
+    if key == "font" and value not in SUBTITLE_FONTS:
+        return
+    if key == "color" and value not in SUBTITLE_COLORS:
+        return
+    ensure_user(user_id)
+    with db_connect() as conn:
+        conn.execute("INSERT OR IGNORE INTO user_preferences(user_id) VALUES(?)", (user_id,))
+        column = "subtitle_font" if key == "font" else "subtitle_color"
+        conn.execute(f"UPDATE user_preferences SET {column}=? WHERE user_id=?", (value, user_id))
+        conn.commit()
+
+
+def subtitle_settings_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Шрифт: Sans", callback_data="subsfont:sans"), InlineKeyboardButton(text="Serif", callback_data="subsfont:serif")],
+        [InlineKeyboardButton(text="Mono", callback_data="subsfont:mono"), InlineKeyboardButton(text="Liberation", callback_data="subsfont:liberation")],
+        [InlineKeyboardButton(text="Цвет: белый", callback_data="subscolor:white"), InlineKeyboardButton(text="Жёлтый", callback_data="subscolor:yellow")],
+        [InlineKeyboardButton(text="Голубой", callback_data="subscolor:cyan"), InlineKeyboardButton(text="Зелёный", callback_data="subscolor:green"), InlineKeyboardButton(text="Розовый", callback_data="subscolor:pink")],
+    ])
+
+
+def quality_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Оригинал", callback_data="quality:original"), InlineKeyboardButton(text="720p", callback_data="quality:720")],
+        [InlineKeyboardButton(text="1080p", callback_data="quality:1080"), InlineKeyboardButton(text="🔥 2K PRO", callback_data="quality:2k")],
+    ])
+
+
 def get_user_by_username_or_id(identifier: str):
     identifier = str(identifier).strip().lstrip("@")
     with db_connect() as conn:
@@ -196,6 +243,7 @@ def main_keyboard():
     return ReplyKeyboardMarkup(keyboard=[
         [KeyboardButton(text="\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e"), KeyboardButton(text="\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b")],
         [KeyboardButton(text="\u2b50 \u041a\u0443\u043f\u0438\u0442\u044c PRO"), KeyboardButton(text="\U0001f464 \u041f\u0440\u043e\u0444\u0438\u043b\u044c")],
+        [KeyboardButton(text="\u2699\ufe0f \u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u043e\u0432")],
         [KeyboardButton(text="\U0001f6e0 \u0410\u0434\u043c\u0438\u043d")],
     ], resize_keyboard=True)
 
@@ -337,8 +385,61 @@ async def cancel(message: Message):
 
 @dp.message(F.text == "\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e")
 async def quality_button(message: Message):
-    set_user_action(message.from_user.id, "quality")
-    await message.answer("\U0001f4f9 \u041f\u0440\u0438\u0448\u043b\u0438 \u0432\u0438\u0434\u0435\u043e \u0444\u0430\u0439\u043b\u043e\u043c \u0438\u043b\u0438 \u043e\u0431\u044b\u0447\u043d\u044b\u043c \u0432\u0438\u0434\u0435\u043e. \u042f \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u044e \u0435\u0433\u043e \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u044e \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442. \u0414\u043b\u044f \u043e\u0442\u043c\u0435\u043d\u044b \u2014 /cancel.")
+    set_user_action(message.from_user.id, None)
+    await message.answer("Выбери качество. 2K доступно только с активным PRO:", reply_markup=quality_keyboard())
+
+
+@dp.message(F.text == "\u2699\ufe0f \u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u043e\u0432")
+async def subtitle_settings_button(message: Message):
+    user_id = message.from_user.id
+    if not is_pro_active(user_id):
+        await message.answer("⚙️ Выбор шрифта и цвета субтитров доступен только с активным PRO. Обычные субтитры по-прежнему бесплатны.")
+        return
+    font, color = get_subtitle_preferences(user_id)
+    await message.answer(f"Настройки субтитров PRO\nШрифт: {SUBTITLE_FONTS[font]}\nЦвет: {SUBTITLE_COLORS[color][0]}\nВыбери, что изменить:", reply_markup=subtitle_settings_keyboard())
+
+
+@dp.callback_query(F.data.startswith("quality:"))
+async def quality_callback(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    quality = callback.data.split(":", 1)[1]
+    if quality not in {"original", "720", "1080", "2k"}:
+        await callback.answer("Неизвестное качество", show_alert=True)
+        return
+    if quality == "2k" and not is_pro_active(user_id):
+        await callback.answer("2K доступно только с активным PRO", show_alert=True)
+        return
+    set_user_action(user_id, f"quality:{quality}")
+    labels = {"original": "оригинальное разрешение", "720": "720p", "1080": "1080p", "2k": "2K (PRO)"}
+    await callback.answer()
+    if callback.message:
+        await callback.message.answer(f"Выбрано: {labels[quality]}. Теперь отправь видео файлом или обычным видео. Для отмены — /cancel.")
+
+
+@dp.callback_query(F.data.startswith("subsfont:"))
+async def subtitle_font_callback(callback: CallbackQuery):
+    if not is_pro_active(callback.from_user.id):
+        await callback.answer("Настройки доступны только с PRO", show_alert=True)
+        return
+    value = callback.data.split(":", 1)[1]
+    if value not in SUBTITLE_FONTS:
+        await callback.answer("Неизвестный шрифт", show_alert=True)
+        return
+    set_subtitle_preference(callback.from_user.id, "font", value)
+    await callback.answer(f"Шрифт: {SUBTITLE_FONTS[value]}")
+
+
+@dp.callback_query(F.data.startswith("subscolor:"))
+async def subtitle_color_callback(callback: CallbackQuery):
+    if not is_pro_active(callback.from_user.id):
+        await callback.answer("Настройки доступны только с PRO", show_alert=True)
+        return
+    value = callback.data.split(":", 1)[1]
+    if value not in SUBTITLE_COLORS:
+        await callback.answer("Неизвестный цвет", show_alert=True)
+        return
+    set_subtitle_preference(callback.from_user.id, "color", value)
+    await callback.answer(f"Цвет: {SUBTITLE_COLORS[value][0]}")
 
 
 @dp.message(F.text == "\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b")
@@ -447,11 +548,11 @@ def run_command(command: list[str], timeout: int | None = None):
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError as exc:
-        raise RuntimeError("FFmpeg \u043d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d \u043d\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 Render. \u0423\u0441\u0442\u0430\u043d\u043e\u0432\u0438 FFmpeg \u0432 \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u0438.") from exc
+        raise RuntimeError("На Render не найден FFmpeg/FFprobe. Проверь apt.txt и сделай новый deploy.") from exc
     except subprocess.TimeoutExpired as exc:
-        raise RuntimeError("\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u043f\u0440\u0435\u0432\u044b\u0441\u0438\u043b\u0430 \u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u043e\u0435 \u0432\u0440\u0435\u043c\u044f.") from exc
+        raise RuntimeError("Обработка превысила допустимое время. Попробуй более короткое видео.") from exc
     if result.returncode != 0:
-        error = (result.stderr or result.stdout or "\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430 FFmpeg").strip()
+        error = (result.stderr or result.stdout or "Неизвестная ошибка FFmpeg").strip()
         raise RuntimeError(error[-1800:])
     return result.stdout.strip()
 
@@ -460,80 +561,113 @@ def probe_video(path: Path) -> tuple[int, int]:
     output = run_command(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", str(path)], timeout=30)
     match = re.match(r"(\d+)x(\d+)", output)
     if not match:
-        raise RuntimeError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0440\u0430\u0437\u043c\u0435\u0440 \u0432\u0438\u0434\u0435\u043e.")
+        raise RuntimeError("Не удалось определить размер видео.")
     return int(match.group(1)), int(match.group(2))
 
 
-def improve_video(input_path: Path, output_path: Path):
+def even(value: float) -> int:
+    return max(2, int(round(value / 2)) * 2)
+
+
+def get_output_size(input_path: Path, quality: str) -> tuple[int, int]:
+    width, height = probe_video(input_path)
+    if quality == "original":
+        return even(width), even(height)
+    target_long = {"720": 1280, "1080": 1920, "2k": 2560}.get(quality)
+    if target_long is None:
+        raise RuntimeError("Неизвестное качество видео.")
+    if width >= height:
+        return target_long, even(target_long * height / width)
+    return even(target_long * width / height), target_long
+
+
+def improve_video(input_path: Path, output_path: Path, quality: str = "original", pro: bool = False):
+    width, height = get_output_size(input_path, quality)
+    # Fast software encoding; PRO uses ultrafast preset to reduce CPU time.
+    preset = "ultrafast" if pro else "veryfast"
+    filters = f"scale={width}:{height}:flags=fast_bilinear,eq=contrast=1.06:saturation=1.05:brightness=0.005,unsharp=5:5:0.45:3:3:0.0,format=yuv420p"
     run_command([
-        "ffmpeg", "-hide_banner", "-y", "-i", str(input_path),
-        "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,eq=contrast=1.10:saturation=1.08:brightness=0.01,unsharp=5:5:0.7:3:3:0.0",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+        "ffmpeg", "-hide_banner", "-y", "-i", str(input_path), "-vf", filters,
+        "-c:v", "libx264", "-preset", preset, "-crf", "21", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(output_path)
     ], timeout=1800)
 
 
-def transcribe_to_srt(input_path: Path, work_dir: Path) -> Path:
+def get_whisper_model(model_name: str):
     if WhisperModel is None:
-        raise RuntimeError("\u041d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0430 \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0430 faster-whisper. \u0414\u043e\u0431\u0430\u0432\u044c \u0435\u0451 \u0432 requirements.txt.")
+        raise RuntimeError("Не установлена faster-whisper. Проверь requirements.txt и deploy.")
+    with MODEL_LOCK:
+        model = MODEL_CACHE.get(model_name)
+        if model is None:
+            log.info("Загружаю модель распознавания речи: %s", model_name)
+            model = WhisperModel(model_name, device="cpu", compute_type="int8")
+            MODEL_CACHE[model_name] = model
+        return model
+
+
+def transcribe_to_srt(input_path: Path, work_dir: Path) -> Path:
     audio_path = work_dir / "audio.wav"
-    run_command(["ffmpeg", "-hide_banner", "-y", "-i", str(input_path), "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(audio_path)], timeout=600)
-    model_name = os.getenv("WHISPER_MODEL", "base")
-    model = WhisperModel(model_name, device="cpu", compute_type="int8")
-    segments, _info = model.transcribe(str(audio_path), beam_size=3, language="ru", vad_filter=True)
+    run_command([
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(input_path),
+        "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(audio_path)
+    ], timeout=600)
+    if not audio_path.exists() or audio_path.stat().st_size < 1000:
+        raise RuntimeError("В видео не найден слышимый аудиотрек. Проверь, что в нём есть речь.")
+
+    model_name = os.getenv("WHISPER_MODEL", "base").strip() or "base"
+    language = os.getenv("WHISPER_LANGUAGE", "ru").strip() or "ru"
+    model = get_whisper_model(model_name)
+    segments, info = model.transcribe(
+        str(audio_path), language=language, beam_size=1, best_of=1,
+        vad_filter=True, condition_on_previous_text=False,
+        vad_parameters={"min_silence_duration_ms": 350}
+    )
     srt_path = work_dir / "subtitles.srt"
+
     def stamp(seconds: float) -> str:
         ms = max(0, int(seconds * 1000))
         hours, ms = divmod(ms, 3_600_000)
         minutes, ms = divmod(ms, 60_000)
         secs, ms = divmod(ms, 1000)
         return f"{hours:02}:{minutes:02}:{secs:02},{ms:03}"
+
     count = 0
-    with srt_path.open("w", encoding="utf-8") as file:
+    with srt_path.open("w", encoding="utf-8-sig", newline="\n") as file:
         for seg in segments:
-            text = " ".join((seg.text or "").split()).replace("-->", "\u2014>")
+            text = " ".join((seg.text or "").split()).replace("-->", "—>")
             if not text:
                 continue
             count += 1
-            file.write(f"{count}\n{stamp(seg.start)} --> {stamp(seg.end)}\n{text}\n\n")
+            start = max(0.0, float(seg.start))
+            end = max(float(seg.end), start + 0.15)
+            file.write(f"{count}\n{stamp(start)} --> {stamp(end)}\n{text}\n\n")
+    log.info("Subtitle transcription completed: %s segments; language=%s; model=%s", count, getattr(info, "language", language), model_name)
     if count == 0:
-        raise RuntimeError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0440\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u0442\u044c \u0440\u0435\u0447\u044c. \u0423\u0431\u0435\u0434\u0438\u0441\u044c, \u0447\u0442\u043e \u0432 \u0432\u0438\u0434\u0435\u043e \u0441\u043b\u044b\u0448\u043d\u0430 \u0440\u0435\u0447\u044c.")
+        raise RuntimeError("Речь не распознана. Проверь громкость и качество звука; попробуй ролик с чёткой речью.")
     return srt_path
 
 
-def add_subtitles(input_path: Path, output_path: Path, work_dir: Path):
+def add_subtitles(input_path: Path, output_path: Path, work_dir: Path, user_id: int, pro: bool):
     width, height = probe_video(input_path)
     srt_path = transcribe_to_srt(input_path, work_dir)
-    # Use a generated ASS file so the text is placed around 62% down the frame, below centre.
-    ass_path = work_dir / "subtitles.ass"
-    play_w, play_h = width, height
-    font_size = max(20, min(48, int(height * 0.045)))
-    margin_v = max(1, int(height * 0.38))  # from bottom -> baseline around 62% of frame height
-    def ass_time(value: str) -> str:
-        hh, mm, rest = value.split(":")
-        ss, ms = rest.split(",")
-        centiseconds = int(ms) // 10
-        return f"{int(hh)}:{int(mm):02}:{int(ss):02}.{centiseconds:02}"
-    entries = []
-    raw = srt_path.read_text(encoding="utf-8-sig").strip()
-    for block in re.split(r"\n\s*\n", raw):
-        lines = block.splitlines()
-        if len(lines) < 3 or "-->" not in lines[1]:
-            continue
-        start, end = [x.strip() for x in lines[1].split("-->", 1)]
-        text = r"\N".join(lines[2:]).replace("{", "\\{").replace("}", "\\}")
-        entries.append(f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Default,,0,0,0,,{text}")
-    ass_path.write_text(
-        f"[Script Info]\nScriptType: v4.00+\nPlayResX: {play_w}\nPlayResY: {play_h}\nScaledBorderAndShadow: yes\n\n"
-        f"[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-        f"Style: Default,DejaVu Sans,{font_size},&H00FFFFFF,&H000000FF,&H00000000,&H64000000,-1,0,1,3,0,2,40,40,{margin_v},1\n\n"
-        f"[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n" + "\n".join(entries) + "\n",
-        encoding="utf-8"
+    font_key, color_key = get_subtitle_preferences(user_id) if pro else ("sans", "white")
+    font_name = SUBTITLE_FONTS.get(font_key, "DejaVu Sans")
+    color = SUBTITLE_COLORS.get(color_key, SUBTITLE_COLORS["white"])[1]
+    font_size = max(22, min(54, int(height * 0.047)))
+    # ASS/SSA colours use AABBGGRR. The subtitles filter renders text directly into the output.
+    margin_v = max(20, int(height * 0.38))
+    srt_path_filter = str(srt_path.resolve()).replace("\\", "/").replace(":", r"\:").replace("'", r"\'")
+    font_name = font_name.replace("'", "")
+    style = (
+        f"FontName={font_name},FontSize={font_size},Bold=1,PrimaryColour={color},"
+        "SecondaryColour=&H000000FF,OutlineColour=&H00000000,BackColour=&H64000000,"
+        f"BorderStyle=1,Outline=3,Shadow=1,Alignment=2,MarginV={margin_v}"
     )
-    escaped = str(ass_path.resolve()).replace("\\", "/").replace(":", r"\:").replace("'", r"\'")
+    preset = "ultrafast" if pro else "veryfast"
     run_command([
-        "ffmpeg", "-hide_banner", "-y", "-i", str(input_path), "-vf", f"ass='{escaped}'",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(input_path),
+        "-vf", f"subtitles='{srt_path_filter}':force_style='{style}'",
+        "-c:v", "libx264", "-preset", preset, "-crf", "21", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(output_path)
     ], timeout=2400)
 
@@ -556,6 +690,13 @@ async def process_video(message: Message, action: str):
         await message.answer("\u23f8 \u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043e\u0442\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c.")
         return
 
+    pro = is_pro_active(user_id)
+    quality = action.split(":", 1)[1] if action.startswith("quality:") else "original"
+    if quality == "2k" and not pro:
+        set_user_action(user_id, None)
+        await message.answer("2K доступно только с активным PRO. Выбери другое качество.")
+        return
+
     work_dir = TMP_DIR / f"job_{user_id}_{uuid.uuid4().hex[:8]}"
     work_dir.mkdir(parents=True, exist_ok=True)
     try:
@@ -570,14 +711,16 @@ async def process_video(message: Message, action: str):
         if not source.exists() or source.stat().st_size == 0:
             raise RuntimeError("Telegram \u043d\u0435 \u0441\u043a\u0430\u0447\u0430\u043b \u0432\u0438\u0434\u0435\u043e \u0438\u043b\u0438 \u0444\u0430\u0439\u043b \u043f\u0443\u0441\u0442\u043e\u0439.")
         output = work_dir / "processed.mp4"
-        if action == "quality":
-            await message.answer("\U0001f6e0 \u0423\u043b\u0443\u0447\u0448\u0430\u044e \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0447\u0435\u0440\u0435\u0437 FFmpeg\u2026")
-            await asyncio.to_thread(improve_video, source, output)
-            caption = "\u2705 \u0413\u043e\u0442\u043e\u0432\u043e! \u0412\u0438\u0434\u0435\u043e \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u043d\u043e: \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u044b \u043a\u043e\u043d\u0442\u0440\u0430\u0441\u0442\u043d\u043e\u0441\u0442\u044c, \u043d\u0430\u0441\u044b\u0449\u0435\u043d\u043d\u043e\u0441\u0442\u044c \u0438 \u0440\u0435\u0437\u043a\u043e\u0441\u0442\u044c."
+        if action.startswith("quality:"):
+            await message.answer(f"🛠 Обрабатываю видео ({quality.upper()}).")
+            await asyncio.to_thread(improve_video, source, output, quality, pro)
+            label = {"original": "оригинальное разрешение", "720": "720p", "1080": "1080p", "2k": "2K"}.get(quality, quality)
+            caption = f"✅ Готово! Видео обработано в режиме {label}. Масштабирование не восстанавливает детали, которых не было в оригинале."
         elif action == "subtitles":
-            await message.answer("\U0001f4dd \u0420\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u044e \u0440\u0435\u0447\u044c \u0438 \u0432\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b. \u042d\u0442\u043e \u043c\u043e\u0436\u0435\u0442 \u0437\u0430\u043d\u044f\u0442\u044c \u043d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043c\u0438\u043d\u0443\u0442\u2026")
-            await asyncio.to_thread(add_subtitles, source, output, work_dir)
-            caption = "\u2705 \u0413\u043e\u0442\u043e\u0432\u043e! \u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u044b \u0436\u0438\u0440\u043d\u044b\u0435 \u0431\u0435\u043b\u044b\u0435 \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b \u0441 \u0447\u0451\u0440\u043d\u043e\u0439 \u043e\u0431\u0432\u043e\u0434\u043a\u043e\u0439 \u0447\u0443\u0442\u044c \u043d\u0438\u0436\u0435 \u0441\u0435\u0440\u0435\u0434\u0438\u043d\u044b \u043a\u0430\u0434\u0440\u0430."
+            await message.answer("📝 Распознаю речь и встраиваю субтитры. На первом запуске может потребоваться больше времени для загрузки модели.")
+            await asyncio.to_thread(add_subtitles, source, output, work_dir, user_id, pro)
+            font_key, color_key = get_subtitle_preferences(user_id) if pro else ("sans", "white")
+            caption = f"✅ Готово! Субтитры встроены. Шрифт: {SUBTITLE_FONTS[font_key]}; цвет: {SUBTITLE_COLORS[color_key][0]}."
         else:
             raise RuntimeError("\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u044b\u0439 \u0440\u0435\u0436\u0438\u043c \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438. \u041d\u0430\u0436\u043c\u0438 \u043a\u043d\u043e\u043f\u043a\u0443 \u0432 \u043c\u0435\u043d\u044e \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u044c \u0432\u0438\u0434\u0435\u043e \u0437\u0430\u043d\u043e\u0432\u043e.")
         if not output.exists() or output.stat().st_size == 0:
@@ -588,12 +731,12 @@ async def process_video(message: Message, action: str):
         await bot.send_video(message.chat.id, FSInputFile(str(output)), caption=caption, supports_streaming=True)
         with db_connect() as conn:
             conn.execute("UPDATE users SET total_tasks=total_tasks+1 WHERE user_id=?", (user_id,))
-            conn.execute("INSERT INTO tasks(user_id,task_type,status,created_at,updated_at,output_name) VALUES(?,?,'done',?,?,?)", (user_id, action, now_text(), now_text(), output.name))
+            conn.execute("INSERT INTO tasks(user_id,task_type,status,created_at,updated_at,output_name) VALUES(?,?,'done',?,?,?)", (user_id, action.split(":", 1)[0], now_text(), now_text(), output.name))
             conn.commit()
     except Exception as exc:
         log.exception("\u041e\u0448\u0438\u0431\u043a\u0430 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438 \u0432\u0438\u0434\u0435\u043e")
         with db_connect() as conn:
-            conn.execute("INSERT INTO tasks(user_id,task_type,status,created_at,updated_at,error) VALUES(?,?,'error',?,?,?)", (user_id, action, now_text(), now_text(), str(exc)[:1000]))
+            conn.execute("INSERT INTO tasks(user_id,task_type,status,created_at,updated_at,error) VALUES(?,?,'error',?,?,?)", (user_id, action.split(":", 1)[0], now_text(), now_text(), str(exc)[:1000]))
             conn.commit()
         send_admin_alert("video_processing_error", f"\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c: {user_id}\n\u041e\u0448\u0438\u0431\u043a\u0430: {type(exc).__name__}: {exc}")
         reason = str(exc).replace("<", "&lt;").replace(">", "&gt;")[:1200]
@@ -608,7 +751,7 @@ async def media_handler(message: Message):
     user_id = message.from_user.id
     ensure_user(user_id, message.from_user.username, message.from_user.first_name)
     action = get_user_action(user_id)
-    if action in {"quality", "subtitles"}:
+    if (action and action.startswith("quality:")) or action == "subtitles":
         await process_video(message, action)
         return
     await message.answer("\u0412\u0438\u0434\u0435\u043e \u043f\u043e\u043b\u0443\u0447\u0438\u043b! \u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0432\u044b\u0431\u0435\u0440\u0438 \u0432 \u043c\u0435\u043d\u044e \u00ab\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e\u00bb \u0438\u043b\u0438 \u00ab\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b\u00bb, \u0437\u0430\u0442\u0435\u043c \u043e\u0442\u043f\u0440\u0430\u0432\u044c \u0432\u0438\u0434\u0435\u043e \u0435\u0449\u0451 \u0440\u0430\u0437.", reply_markup=main_keyboard())
