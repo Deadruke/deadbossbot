@@ -54,7 +54,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger("deadbossbot")
 
 if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN не задан в Environment Variables Render")
+    raise RuntimeError("BOT_TOKEN Ð½Ðµ Ð·Ð°Ð´Ð°Ð½ Ð² Environment Variables Render")
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
@@ -178,40 +178,40 @@ def send_admin_alert(category: str, details: str):
     if now - last_admin_alerts.get(category, 0) < ALERT_COOLDOWN_SECONDS:
         return
     last_admin_alerts[category] = now
-    text = f"🚨 <b>DeadBossBot alert</b>\nTime: {now_text()}\nCategory: {category}\n\n{details}"
+    text = f"ð¨ <b>DeadBossBot alert</b>\nTime: {now_text()}\nCategory: {category}\n\n{details}"
     async def _send():
         try:
             await bot.send_message(ADMIN_ID, text[:3900])
         except Exception:
-            log.exception("Не удалось отправить уведомление администратору")
+            log.exception("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¾ÑÐ¿ÑÐ°Ð²Ð¸ÑÑ ÑÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ðµ Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÑ")
     try:
         loop = asyncio.get_running_loop()
         loop.create_task(_send())
     except RuntimeError:
-        log.error("Admin alert вне event loop: %s", text)
+        log.error("Admin alert Ð²Ð½Ðµ event loop: %s", text)
 
 
 def main_keyboard():
     return ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text="🎬 Улучшить качество"), KeyboardButton(text="💬 Добавить субтитры")],
-        [KeyboardButton(text="⭐ Купить PRO"), KeyboardButton(text="👤 Профиль")],
-        [KeyboardButton(text="🛠 Админ")],
+        [KeyboardButton(text="ð¬ Ð£Ð»ÑÑÑÐ¸ÑÑ ÐºÐ°ÑÐµÑÑÐ²Ð¾"), KeyboardButton(text="ð¬ ÐÐ¾Ð±Ð°Ð²Ð¸ÑÑ ÑÑÐ±ÑÐ¸ÑÑÑ")],
+        [KeyboardButton(text="â­ ÐÑÐ¿Ð¸ÑÑ PRO"), KeyboardButton(text="ð¤ ÐÑÐ¾ÑÐ¸Ð»Ñ")],
+        [KeyboardButton(text="ð  ÐÐ´Ð¼Ð¸Ð½")],
     ], resize_keyboard=True)
 
 
 def admin_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📊 Статистика", callback_data="admin:stats"), InlineKeyboardButton(text="🔄 Обработка вкл/выкл", callback_data="admin:toggle_processing")],
-        [InlineKeyboardButton(text="👥 Пользователи", callback_data="admin:list_users")],
+        [InlineKeyboardButton(text="ð Ð¡ÑÐ°ÑÐ¸ÑÑÐ¸ÐºÐ°", callback_data="admin:stats"), InlineKeyboardButton(text="ð ÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ° Ð²ÐºÐ»/Ð²ÑÐºÐ»", callback_data="admin:toggle_processing")],
+        [InlineKeyboardButton(text="ð¥ ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ð¸", callback_data="admin:list_users")],
     ])
 
 
 def welcome_text():
-    return ("Привет! Я DeadBossBot.\n\n"
-            "🎬 Улучшаю изображение видео фильтрами.\n"
-            "💬 Распознаю русскую речь и добавляю субтитры.\n"
-            "⭐ PRO — за Telegram Stars.\n\n"
-            "Выбери действие в меню, затем отправь видео.")
+    return ("ÐÑÐ¸Ð²ÐµÑ! Ð¯ DeadBossBot.\n\n"
+            "ð¬ Ð£Ð»ÑÑÑÐ°Ñ Ð¸Ð·Ð¾Ð±ÑÐ°Ð¶ÐµÐ½Ð¸Ðµ Ð²Ð¸Ð´ÐµÐ¾ ÑÐ¸Ð»ÑÑÑÐ°Ð¼Ð¸.\n"
+            "ð¬ Ð Ð°ÑÐ¿Ð¾Ð·Ð½Ð°Ñ ÑÑÑÑÐºÑÑ ÑÐµÑÑ Ð¸ Ð´Ð¾Ð±Ð°Ð²Ð»ÑÑ ÑÑÐ±ÑÐ¸ÑÑÑ.\n"
+            "â­ PRO â Ð·Ð° Telegram Stars.\n\n"
+            "ÐÑÐ±ÐµÑÐ¸ Ð´ÐµÐ¹ÑÑÐ²Ð¸Ðµ Ð² Ð¼ÐµÐ½Ñ, Ð·Ð°ÑÐµÐ¼ Ð¾ÑÐ¿ÑÐ°Ð²Ñ Ð²Ð¸Ð´ÐµÐ¾.")
 
 
 @app.get("/")
@@ -233,7 +233,7 @@ async def start(message: Message):
 
 @dp.message(Command("help"))
 async def help_command(message: Message):
-    await message.answer("Команды: /start, /help, /profile, /admin, /cancel, /grantpro ID дни, /revokepro ID")
+    await message.answer("ÐÐ¾Ð¼Ð°Ð½Ð´Ñ: /start, /help, /profile, /admin, /cancel, /grantpro ID Ð´Ð½Ð¸, /revokepro ID")
 
 
 async def send_profile(message: Message):
@@ -242,8 +242,8 @@ async def send_profile(message: Message):
     with db_connect() as conn:
         row = conn.execute("SELECT stars_balance, pro_until, total_tasks FROM users WHERE user_id=?", (user_id,)).fetchone()
     expiry = int(row["pro_until"] or 0)
-    pro_text = f"✅ PRO до {datetime.fromtimestamp(expiry, timezone.utc).strftime('%d.%m.%Y %H:%M UTC')}" if expiry > int(time.time()) else "❌ PRO не активен"
-    await message.answer(f"👤 <b>Профиль</b>\nID: <code>{user_id}</code>\nБаланс: {row['stars_balance']} ⭐\n{pro_text}\nОбработано видео: {row['total_tasks']}")
+    pro_text = f"â PRO Ð´Ð¾ {datetime.fromtimestamp(expiry, timezone.utc).strftime('%d.%m.%Y %H:%M UTC')}" if expiry > int(time.time()) else "â PRO Ð½Ðµ Ð°ÐºÑÐ¸Ð²ÐµÐ½"
+    await message.answer(f"ð¤ <b>ÐÑÐ¾ÑÐ¸Ð»Ñ</b>\nID: <code>{user_id}</code>\nÐÐ°Ð»Ð°Ð½Ñ: {row['stars_balance']} â­\n{pro_text}\nÐÐ±ÑÐ°Ð±Ð¾ÑÐ°Ð½Ð¾ Ð²Ð¸Ð´ÐµÐ¾: {row['total_tasks']}")
 
 
 @dp.message(Command("profile"))
@@ -256,13 +256,13 @@ async def admin_panel(message: Message):
         users = conn.execute("SELECT COUNT(*) c FROM users").fetchone()["c"]
         pros = conn.execute("SELECT COUNT(*) c FROM users WHERE pro_until>?", (int(time.time()),)).fetchone()["c"]
         tasks = conn.execute("SELECT COUNT(*) c FROM tasks").fetchone()["c"]
-    await message.answer(f"🛠 <b>Админ-панель</b>\nПользователей: {users}\nАктивный PRO: {pros}\nЗадач всего: {tasks}\nОбработка: {'включена' if get_setting('processing_enabled','1') == '1' else 'выключена'}", reply_markup=admin_keyboard())
+    await message.answer(f"ð  <b>ÐÐ´Ð¼Ð¸Ð½-Ð¿Ð°Ð½ÐµÐ»Ñ</b>\nÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»ÐµÐ¹: {users}\nÐÐºÑÐ¸Ð²Ð½ÑÐ¹ PRO: {pros}\nÐÐ°Ð´Ð°Ñ Ð²ÑÐµÐ³Ð¾: {tasks}\nÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ°: {'Ð²ÐºÐ»ÑÑÐµÐ½Ð°' if get_setting('processing_enabled','1') == '1' else 'Ð²ÑÐºÐ»ÑÑÐµÐ½Ð°'}", reply_markup=admin_keyboard())
 
 
 @dp.message(Command("admin"))
 async def admin_command(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("🚫 Доступ только владельцу.")
+        await message.answer("ð« ÐÐ¾ÑÑÑÐ¿ ÑÐ¾Ð»ÑÐºÐ¾ Ð²Ð»Ð°Ð´ÐµÐ»ÑÑÑ.")
         return
     await admin_panel(message)
 
@@ -270,20 +270,20 @@ async def admin_command(message: Message):
 @dp.callback_query(F.data.startswith("admin:"))
 async def admin_callback(callback: CallbackQuery):
     if callback.from_user.id != ADMIN_ID:
-        await callback.answer("Доступ запрещён", show_alert=True)
+        await callback.answer("ÐÐ¾ÑÑÑÐ¿ Ð·Ð°Ð¿ÑÐµÑÑÐ½", show_alert=True)
         return
     if callback.data == "admin:toggle_processing":
         new = "0" if get_setting("processing_enabled", "1") == "1" else "1"
         set_setting("processing_enabled", new)
         if callback.message:
-            await callback.message.answer(f"Обработка {'включена' if new == '1' else 'выключена'}.")
+            await callback.message.answer(f"ÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ° {'Ð²ÐºÐ»ÑÑÐµÐ½Ð°' if new == '1' else 'Ð²ÑÐºÐ»ÑÑÐµÐ½Ð°'}.")
     elif callback.data == "admin:stats":
         if callback.message:
             await admin_panel(callback.message)
     elif callback.data == "admin:list_users":
         with db_connect() as conn:
             rows = conn.execute("SELECT user_id,username,stars_balance,pro_until FROM users ORDER BY user_id DESC LIMIT 10").fetchall()
-        text = "👥 <b>Последние пользователи</b>\n" + "\n".join(f"{r['user_id']} | @{r['username'] or '—'} | {'PRO' if r['pro_until'] > int(time.time()) else '—'} | {r['stars_balance']} ⭐" for r in rows)
+        text = "ð¥ <b>ÐÐ¾ÑÐ»ÐµÐ´Ð½Ð¸Ðµ Ð¿Ð¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ð¸</b>\n" + "\n".join(f"{r['user_id']} | @{r['username'] or 'â'} | {'PRO' if r['pro_until'] > int(time.time()) else 'â'} | {r['stars_balance']} â­" for r in rows)
         if callback.message:
             await callback.message.answer(text[:3900])
     await callback.answer()
@@ -292,92 +292,92 @@ async def admin_callback(callback: CallbackQuery):
 @dp.message(Command("grantpro"))
 async def grantpro(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("🚫 Доступ только владельцу.")
+        await message.answer("ð« ÐÐ¾ÑÑÑÐ¿ ÑÐ¾Ð»ÑÐºÐ¾ Ð²Ð»Ð°Ð´ÐµÐ»ÑÑÑ.")
         return
     parts = (message.text or "").split()
     if len(parts) < 3 or not parts[2].isdigit() or int(parts[2]) < 1:
-        await message.answer("Формат: /grantpro USER_ID ДНИ")
+        await message.answer("Ð¤Ð¾ÑÐ¼Ð°Ñ: /grantpro USER_ID ÐÐÐ")
         return
     target = get_user_by_username_or_id(parts[1])
     if not target and parts[1].isdigit():
         ensure_user(int(parts[1]))
         target = {"user_id": int(parts[1])}
     if not target:
-        await message.answer("Пользователь не найден. Пусть сначала нажмёт /start.")
+        await message.answer("ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½. ÐÑÑÑÑ ÑÐ½Ð°ÑÐ°Ð»Ð° Ð½Ð°Ð¶Ð¼ÑÑ /start.")
         return
     set_pro_for_user(int(target["user_id"]), int(parts[2]))
-    await message.answer(f"✅ PRO выдан на {parts[2]} дней.")
+    await message.answer(f"â PRO Ð²ÑÐ´Ð°Ð½ Ð½Ð° {parts[2]} Ð´Ð½ÐµÐ¹.")
 
 
 @dp.message(Command("revokepro"))
 async def revokepro(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("🚫 Доступ только владельцу.")
+        await message.answer("ð« ÐÐ¾ÑÑÑÐ¿ ÑÐ¾Ð»ÑÐºÐ¾ Ð²Ð»Ð°Ð´ÐµÐ»ÑÑÑ.")
         return
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("Формат: /revokepro USER_ID")
+        await message.answer("Ð¤Ð¾ÑÐ¼Ð°Ñ: /revokepro USER_ID")
         return
     target = get_user_by_username_or_id(parts[1])
     if not target:
-        await message.answer("Пользователь не найден.")
+        await message.answer("ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½.")
         return
     with db_connect() as conn:
         conn.execute("UPDATE users SET pro_until=0 WHERE user_id=?", (target["user_id"],))
         conn.commit()
-    await message.answer("✅ PRO отключён.")
+    await message.answer("â PRO Ð¾ÑÐºÐ»ÑÑÑÐ½.")
 
 
 @dp.message(Command("cancel"))
 async def cancel(message: Message):
     set_user_action(message.from_user.id, None)
-    await message.answer("🛑 Действие отменено.", reply_markup=main_keyboard())
+    await message.answer("ð ÐÐµÐ¹ÑÑÐ²Ð¸Ðµ Ð¾ÑÐ¼ÐµÐ½ÐµÐ½Ð¾.", reply_markup=main_keyboard())
 
 
-@dp.message(F.text == "🎬 Улучшить качество")
+@dp.message(F.text == "ð¬ Ð£Ð»ÑÑÑÐ¸ÑÑ ÐºÐ°ÑÐµÑÑÐ²Ð¾")
 async def quality_button(message: Message):
     set_user_action(message.from_user.id, "quality")
-    await message.answer("📹 Пришли видео файлом или обычным видео. Я обработаю его и отправлю результат. Для отмены — /cancel.")
+    await message.answer("ð¹ ÐÑÐ¸ÑÐ»Ð¸ Ð²Ð¸Ð´ÐµÐ¾ ÑÐ°Ð¹Ð»Ð¾Ð¼ Ð¸Ð»Ð¸ Ð¾Ð±ÑÑÐ½ÑÐ¼ Ð²Ð¸Ð´ÐµÐ¾. Ð¯ Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐ°Ñ ÐµÐ³Ð¾ Ð¸ Ð¾ÑÐ¿ÑÐ°Ð²Ð»Ñ ÑÐµÐ·ÑÐ»ÑÑÐ°Ñ. ÐÐ»Ñ Ð¾ÑÐ¼ÐµÐ½Ñ â /cancel.")
 
 
-@dp.message(F.text == "💬 Добавить субтитры")
+@dp.message(F.text == "ð¬ ÐÐ¾Ð±Ð°Ð²Ð¸ÑÑ ÑÑÐ±ÑÐ¸ÑÑÑ")
 async def subtitles_button(message: Message):
     set_user_action(message.from_user.id, "subtitles")
-    await message.answer("🎬 Пришли видео с речью. Я распознаю русскую речь и встрою жирные белые субтитры с чёрной обводкой чуть ниже середины кадра. Для отмены — /cancel.")
+    await message.answer("ð¬ ÐÑÐ¸ÑÐ»Ð¸ Ð²Ð¸Ð´ÐµÐ¾ Ñ ÑÐµÑÑÑ. Ð¯ ÑÐ°ÑÐ¿Ð¾Ð·Ð½Ð°Ñ ÑÑÑÑÐºÑÑ ÑÐµÑÑ Ð¸ Ð²ÑÑÑÐ¾Ñ Ð¶Ð¸ÑÐ½ÑÐµ Ð±ÐµÐ»ÑÐµ ÑÑÐ±ÑÐ¸ÑÑÑ Ñ ÑÑÑÐ½Ð¾Ð¹ Ð¾Ð±Ð²Ð¾Ð´ÐºÐ¾Ð¹ ÑÑÑÑ Ð½Ð¸Ð¶Ðµ ÑÐµÑÐµÐ´Ð¸Ð½Ñ ÐºÐ°Ð´ÑÐ°. ÐÐ»Ñ Ð¾ÑÐ¼ÐµÐ½Ñ â /cancel.")
 
 
-@dp.message(F.text == "⭐ Купить PRO")
+@dp.message(F.text == "â­ ÐÑÐ¿Ð¸ÑÑ PRO")
 async def buy_pro(message: Message):
     user_id = message.from_user.id
     ensure_user(user_id, message.from_user.username, message.from_user.first_name)
     if is_pro_active(user_id):
-        await message.answer("✅ PRO у тебя уже активен.")
+        await message.answer("â PRO Ñ ÑÐµÐ±Ñ ÑÐ¶Ðµ Ð°ÐºÑÐ¸Ð²ÐµÐ½.")
         return
     payload = f"deadboss:pro:{PRO_DAYS}:{user_id}:{uuid.uuid4().hex}"
     try:
         await bot.send_invoice(
             chat_id=user_id,
             title="DeadBossBot PRO",
-            description=f"Подписка PRO на {PRO_DAYS} дней.",
+            description=f"ÐÐ¾Ð´Ð¿Ð¸ÑÐºÐ° PRO Ð½Ð° {PRO_DAYS} Ð´Ð½ÐµÐ¹.",
             payload=payload,
             provider_token="",  # Required for Telegram Stars: empty string, not a provider token.
             currency="XTR",
-            prices=[LabeledPrice(label=f"PRO на {PRO_DAYS} дней", amount=PRO_PRICE_STARS)],
+            prices=[LabeledPrice(label=f"PRO Ð½Ð° {PRO_DAYS} Ð´Ð½ÐµÐ¹", amount=PRO_PRICE_STARS)],
         )
     except Exception as exc:
-        log.exception("Не удалось создать счёт Telegram Stars")
-        await message.answer(f"❌ Не удалось создать счёт. Проверь настройки бота и попробуй позже.\nПричина: {type(exc).__name__}")
+        log.exception("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ ÑÐ¾Ð·Ð´Ð°ÑÑ ÑÑÑÑ Telegram Stars")
+        await message.answer(f"â ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ ÑÐ¾Ð·Ð´Ð°ÑÑ ÑÑÑÑ. ÐÑÐ¾Ð²ÐµÑÑ Ð½Ð°ÑÑÑÐ¾Ð¹ÐºÐ¸ Ð±Ð¾ÑÐ° Ð¸ Ð¿Ð¾Ð¿ÑÐ¾Ð±ÑÐ¹ Ð¿Ð¾Ð·Ð¶Ðµ.\nÐÑÐ¸ÑÐ¸Ð½Ð°: {type(exc).__name__}")
 
 
-@dp.message(F.text == "👤 Профиль")
+@dp.message(F.text == "ð¤ ÐÑÐ¾ÑÐ¸Ð»Ñ")
 async def profile_button(message: Message):
     await send_profile(message)
 
 
-@dp.message(F.text == "🛠 Админ")
+@dp.message(F.text == "ð  ÐÐ´Ð¼Ð¸Ð½")
 async def admin_button(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("🚫 Доступ только владельцу.")
+        await message.answer("ð« ÐÐ¾ÑÑÑÐ¿ ÑÐ¾Ð»ÑÐºÐ¾ Ð²Ð»Ð°Ð´ÐµÐ»ÑÑÑ.")
         return
     await admin_panel(message)
 
@@ -393,7 +393,7 @@ async def pre_checkout(query: PreCheckoutQuery):
                  and query.currency == "XTR" and query.total_amount == PRO_PRICE_STARS)
     except Exception:
         valid = False
-    await bot.answer_pre_checkout_query(query.id, ok=valid, error_message=None if valid else "Счёт недействителен. Открой покупку PRO заново.")
+    await bot.answer_pre_checkout_query(query.id, ok=valid, error_message=None if valid else "Ð¡ÑÑÑ Ð½ÐµÐ´ÐµÐ¹ÑÑÐ²Ð¸ÑÐµÐ»ÐµÐ½. ÐÑÐºÑÐ¾Ð¹ Ð¿Ð¾ÐºÑÐ¿ÐºÑ PRO Ð·Ð°Ð½Ð¾Ð²Ð¾.")
 
 
 @dp.message(F.successful_payment)
@@ -405,13 +405,13 @@ async def successful_payment(message: Message):
     if not (len(parts) == 5 and parts[0] == "deadboss" and parts[1] == "pro"
             and parts[3].isdigit() and int(parts[3]) == user_id
             and payment.currency == "XTR" and payment.total_amount == PRO_PRICE_STARS):
-        log.error("Получен платёж с неизвестным payload от user=%s", user_id)
-        await message.answer("⚠️ Платёж получен, но счёт не удалось проверить автоматически. Свяжись с администратором.")
-        send_admin_alert("payment_validation", f"Пользователь {user_id}; payload={payment.invoice_payload!r}; currency={payment.currency}; amount={payment.total_amount}")
+        log.error("ÐÐ¾Ð»ÑÑÐµÐ½ Ð¿Ð»Ð°ÑÑÐ¶ Ñ Ð½ÐµÐ¸Ð·Ð²ÐµÑÑÐ½ÑÐ¼ payload Ð¾Ñ user=%s", user_id)
+        await message.answer("â ï¸ ÐÐ»Ð°ÑÑÐ¶ Ð¿Ð¾Ð»ÑÑÐµÐ½, Ð½Ð¾ ÑÑÑÑ Ð½Ðµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¿ÑÐ¾Ð²ÐµÑÐ¸ÑÑ Ð°Ð²ÑÐ¾Ð¼Ð°ÑÐ¸ÑÐµÑÐºÐ¸. Ð¡Ð²ÑÐ¶Ð¸ÑÑ Ñ Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÐ¾Ð¼.")
+        send_admin_alert("payment_validation", f"ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ {user_id}; payload={payment.invoice_payload!r}; currency={payment.currency}; amount={payment.total_amount}")
         return
     charge_id = payment.telegram_payment_charge_id
     if not charge_id:
-        await message.answer("⚠️ Не удалось проверить идентификатор платежа. Свяжись с администратором.")
+        await message.answer("â ï¸ ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¿ÑÐ¾Ð²ÐµÑÐ¸ÑÑ Ð¸Ð´ÐµÐ½ÑÐ¸ÑÐ¸ÐºÐ°ÑÐ¾Ñ Ð¿Ð»Ð°ÑÐµÐ¶Ð°. Ð¡Ð²ÑÐ¶Ð¸ÑÑ Ñ Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÐ¾Ð¼.")
         return
 
     # Insert charge and extend PRO in one DB transaction. UNIQUE charge_id prevents duplicate credit.
@@ -421,7 +421,7 @@ async def successful_payment(message: Message):
         exists = conn.execute("SELECT id FROM payments WHERE charge_id=?", (charge_id,)).fetchone()
         if exists:
             conn.rollback()
-            await message.answer("✅ Этот платёж уже учтён. PRO повторно не начислялся.")
+            await message.answer("â Ð­ÑÐ¾Ñ Ð¿Ð»Ð°ÑÑÐ¶ ÑÐ¶Ðµ ÑÑÑÑÐ½. PRO Ð¿Ð¾Ð²ÑÐ¾ÑÐ½Ð¾ Ð½Ðµ Ð½Ð°ÑÐ¸ÑÐ»ÑÐ»ÑÑ.")
             return
         conn.execute("INSERT INTO payments(user_id,payload,amount_stars,currency,charge_id,status,created_at) VALUES(?,?,?,?,?,'paid',?)",
                      (user_id, payment.invoice_payload, int(payment.total_amount), payment.currency, charge_id, now_text()))
@@ -433,24 +433,24 @@ async def successful_payment(message: Message):
         conn.commit()
     except Exception:
         conn.rollback()
-        log.exception("Не удалось записать платёж/PRO")
+        log.exception("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð·Ð°Ð¿Ð¸ÑÐ°ÑÑ Ð¿Ð»Ð°ÑÑÐ¶/PRO")
         send_admin_alert("payment_db_error", f"User {user_id}; charge {charge_id}")
-        await message.answer("⚠️ Telegram подтвердил платёж, но обновление PRO временно не удалось. Администратор уведомлён; не оплачивай повторно.")
+        await message.answer("â ï¸ Telegram Ð¿Ð¾Ð´ÑÐ²ÐµÑÐ´Ð¸Ð» Ð¿Ð»Ð°ÑÑÐ¶, Ð½Ð¾ Ð¾Ð±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸Ðµ PRO Ð²ÑÐµÐ¼ÐµÐ½Ð½Ð¾ Ð½Ðµ ÑÐ´Ð°Ð»Ð¾ÑÑ. ÐÐ´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾Ñ ÑÐ²ÐµÐ´Ð¾Ð¼Ð»ÑÐ½; Ð½Ðµ Ð¾Ð¿Ð»Ð°ÑÐ¸Ð²Ð°Ð¹ Ð¿Ð¾Ð²ÑÐ¾ÑÐ½Ð¾.")
         return
     finally:
         conn.close()
-    await message.answer(f"🎉 Оплата подтверждена! PRO активирован на {PRO_DAYS} дней за {PRO_PRICE_STARS} ⭐.")
+    await message.answer(f"ð ÐÐ¿Ð»Ð°ÑÐ° Ð¿Ð¾Ð´ÑÐ²ÐµÑÐ¶Ð´ÐµÐ½Ð°! PRO Ð°ÐºÑÐ¸Ð²Ð¸ÑÐ¾Ð²Ð°Ð½ Ð½Ð° {PRO_DAYS} Ð´Ð½ÐµÐ¹ Ð·Ð° {PRO_PRICE_STARS} â­.")
 
 
 def run_command(command: list[str], timeout: int | None = None):
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError as exc:
-        raise RuntimeError("FFmpeg не установлен на сервере Render. Установи FFmpeg в окружении.") from exc
+        raise RuntimeError("FFmpeg Ð½Ðµ ÑÑÑÐ°Ð½Ð¾Ð²Ð»ÐµÐ½ Ð½Ð° ÑÐµÑÐ²ÐµÑÐµ Render. Ð£ÑÑÐ°Ð½Ð¾Ð²Ð¸ FFmpeg Ð² Ð¾ÐºÑÑÐ¶ÐµÐ½Ð¸Ð¸.") from exc
     except subprocess.TimeoutExpired as exc:
-        raise RuntimeError("Обработка превысила допустимое время.") from exc
+        raise RuntimeError("ÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ° Ð¿ÑÐµÐ²ÑÑÐ¸Ð»Ð° Ð´Ð¾Ð¿ÑÑÑÐ¸Ð¼Ð¾Ðµ Ð²ÑÐµÐ¼Ñ.") from exc
     if result.returncode != 0:
-        error = (result.stderr or result.stdout or "Неизвестная ошибка FFmpeg").strip()
+        error = (result.stderr or result.stdout or "ÐÐµÐ¸Ð·Ð²ÐµÑÑÐ½Ð°Ñ Ð¾ÑÐ¸Ð±ÐºÐ° FFmpeg").strip()
         raise RuntimeError(error[-1800:])
     return result.stdout.strip()
 
@@ -459,7 +459,7 @@ def probe_video(path: Path) -> tuple[int, int]:
     output = run_command(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", str(path)], timeout=30)
     match = re.match(r"(\d+)x(\d+)", output)
     if not match:
-        raise RuntimeError("Не удалось определить размер видео.")
+        raise RuntimeError("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¾Ð¿ÑÐµÐ´ÐµÐ»Ð¸ÑÑ ÑÐ°Ð·Ð¼ÐµÑ Ð²Ð¸Ð´ÐµÐ¾.")
     return int(match.group(1)), int(match.group(2))
 
 
@@ -474,7 +474,7 @@ def improve_video(input_path: Path, output_path: Path):
 
 def transcribe_to_srt(input_path: Path, work_dir: Path) -> Path:
     if WhisperModel is None:
-        raise RuntimeError("Не установлена библиотека faster-whisper. Добавь её в requirements.txt.")
+        raise RuntimeError("ÐÐµ ÑÑÑÐ°Ð½Ð¾Ð²Ð»ÐµÐ½Ð° Ð±Ð¸Ð±Ð»Ð¸Ð¾ÑÐµÐºÐ° faster-whisper. ÐÐ¾Ð±Ð°Ð²Ñ ÐµÑ Ð² requirements.txt.")
     audio_path = work_dir / "audio.wav"
     run_command(["ffmpeg", "-hide_banner", "-y", "-i", str(input_path), "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(audio_path)], timeout=600)
     model_name = os.getenv("WHISPER_MODEL", "base")
@@ -490,13 +490,13 @@ def transcribe_to_srt(input_path: Path, work_dir: Path) -> Path:
     count = 0
     with srt_path.open("w", encoding="utf-8") as file:
         for seg in segments:
-            text = " ".join((seg.text or "").split()).replace("-->", "—>")
+            text = " ".join((seg.text or "").split()).replace("-->", "â>")
             if not text:
                 continue
             count += 1
             file.write(f"{count}\n{stamp(seg.start)} --> {stamp(seg.end)}\n{text}\n\n")
     if count == 0:
-        raise RuntimeError("Не удалось распознать речь. Убедись, что в видео слышна речь.")
+        raise RuntimeError("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ ÑÐ°ÑÐ¿Ð¾Ð·Ð½Ð°ÑÑ ÑÐµÑÑ. Ð£Ð±ÐµÐ´Ð¸ÑÑ, ÑÑÐ¾ Ð² Ð²Ð¸Ð´ÐµÐ¾ ÑÐ»ÑÑÐ½Ð° ÑÐµÑÑ.")
     return srt_path
 
 
@@ -541,24 +541,24 @@ async def process_video(message: Message, action: str):
     user_id = message.from_user.id
     file_obj = message.video or message.document
     if file_obj is None:
-        await message.answer("Пришли видео, пожалуйста.")
+        await message.answer("ÐÑÐ¸ÑÐ»Ð¸ Ð²Ð¸Ð´ÐµÐ¾, Ð¿Ð¾Ð¶Ð°Ð»ÑÐ¹ÑÑÐ°.")
         return
     if message.document and not (message.document.mime_type or "").startswith("video/"):
-        await message.answer("Это не похоже на видеофайл. Отправь видео как видео или документ с типом video/.")
+        await message.answer("Ð­ÑÐ¾ Ð½Ðµ Ð¿Ð¾ÑÐ¾Ð¶Ðµ Ð½Ð° Ð²Ð¸Ð´ÐµÐ¾ÑÐ°Ð¹Ð». ÐÑÐ¿ÑÐ°Ð²Ñ Ð²Ð¸Ð´ÐµÐ¾ ÐºÐ°Ðº Ð²Ð¸Ð´ÐµÐ¾ Ð¸Ð»Ð¸ Ð´Ð¾ÐºÑÐ¼ÐµÐ½Ñ Ñ ÑÐ¸Ð¿Ð¾Ð¼ video/.")
         return
     file_size = getattr(file_obj, "file_size", None) or 0
     if file_size and file_size > MAX_VIDEO_MB * 1024 * 1024:
-        await message.answer(f"Файл слишком большой. Максимальный размер для этого бота: {MAX_VIDEO_MB} МБ.")
+        await message.answer(f"Ð¤Ð°Ð¹Ð» ÑÐ»Ð¸ÑÐºÐ¾Ð¼ Ð±Ð¾Ð»ÑÑÐ¾Ð¹. ÐÐ°ÐºÑÐ¸Ð¼Ð°Ð»ÑÐ½ÑÐ¹ ÑÐ°Ð·Ð¼ÐµÑ Ð´Ð»Ñ ÑÑÐ¾Ð³Ð¾ Ð±Ð¾ÑÐ°: {MAX_VIDEO_MB} ÐÐ.")
         set_user_action(user_id, None)
         return
     if get_setting("processing_enabled", "1") != "1" and user_id != ADMIN_ID:
-        await message.answer("⏸ Обработка временно отключена администратором.")
+        await message.answer("â¸ ÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ° Ð²ÑÐµÐ¼ÐµÐ½Ð½Ð¾ Ð¾ÑÐºÐ»ÑÑÐµÐ½Ð° Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÐ¾Ð¼.")
         return
 
     work_dir = TMP_DIR / f"job_{user_id}_{uuid.uuid4().hex[:8]}"
     work_dir.mkdir(parents=True, exist_ok=True)
     try:
-        await message.answer("📥 Скачиваю видео…")
+        await message.answer("ð¥ Ð¡ÐºÐ°ÑÐ¸Ð²Ð°Ñ Ð²Ð¸Ð´ÐµÐ¾â¦")
         file_info = await bot.get_file(file_obj.file_id)
         original_name = getattr(file_obj, "file_name", None) or "input.mp4"
         suffix = Path(original_name).suffix.lower()
@@ -567,36 +567,36 @@ async def process_video(message: Message, action: str):
         source = work_dir / f"input{suffix}"
         await bot.download_file(file_info.file_path, destination=source)
         if not source.exists() or source.stat().st_size == 0:
-            raise RuntimeError("Telegram не скачал видео или файл пустой.")
+            raise RuntimeError("Telegram Ð½Ðµ ÑÐºÐ°ÑÐ°Ð» Ð²Ð¸Ð´ÐµÐ¾ Ð¸Ð»Ð¸ ÑÐ°Ð¹Ð» Ð¿ÑÑÑÐ¾Ð¹.")
         output = work_dir / "processed.mp4"
         if action == "quality":
-            await message.answer("🛠 Улучшаю изображение через FFmpeg…")
+            await message.answer("ð  Ð£Ð»ÑÑÑÐ°Ñ Ð¸Ð·Ð¾Ð±ÑÐ°Ð¶ÐµÐ½Ð¸Ðµ ÑÐµÑÐµÐ· FFmpegâ¦")
             await asyncio.to_thread(improve_video, source, output)
-            caption = "✅ Готово! Видео обработано: улучшены контрастность, насыщенность и резкость."
+            caption = "â ÐÐ¾ÑÐ¾Ð²Ð¾! ÐÐ¸Ð´ÐµÐ¾ Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐ°Ð½Ð¾: ÑÐ»ÑÑÑÐµÐ½Ñ ÐºÐ¾Ð½ÑÑÐ°ÑÑÐ½Ð¾ÑÑÑ, Ð½Ð°ÑÑÑÐµÐ½Ð½Ð¾ÑÑÑ Ð¸ ÑÐµÐ·ÐºÐ¾ÑÑÑ."
         elif action == "subtitles":
-            await message.answer("📝 Распознаю речь и встраиваю субтитры. Это может занять несколько минут…")
+            await message.answer("ð Ð Ð°ÑÐ¿Ð¾Ð·Ð½Ð°Ñ ÑÐµÑÑ Ð¸ Ð²ÑÑÑÐ°Ð¸Ð²Ð°Ñ ÑÑÐ±ÑÐ¸ÑÑÑ. Ð­ÑÐ¾ Ð¼Ð¾Ð¶ÐµÑ Ð·Ð°Ð½ÑÑÑ Ð½ÐµÑÐºÐ¾Ð»ÑÐºÐ¾ Ð¼Ð¸Ð½ÑÑâ¦")
             await asyncio.to_thread(add_subtitles, source, output, work_dir)
-            caption = "✅ Готово! Добавлены жирные белые субтитры с чёрной обводкой чуть ниже середины кадра."
+            caption = "â ÐÐ¾ÑÐ¾Ð²Ð¾! ÐÐ¾Ð±Ð°Ð²Ð»ÐµÐ½Ñ Ð¶Ð¸ÑÐ½ÑÐµ Ð±ÐµÐ»ÑÐµ ÑÑÐ±ÑÐ¸ÑÑÑ Ñ ÑÑÑÐ½Ð¾Ð¹ Ð¾Ð±Ð²Ð¾Ð´ÐºÐ¾Ð¹ ÑÑÑÑ Ð½Ð¸Ð¶Ðµ ÑÐµÑÐµÐ´Ð¸Ð½Ñ ÐºÐ°Ð´ÑÐ°."
         else:
-            raise RuntimeError("Неизвестный режим обработки. Нажми кнопку в меню и отправь видео заново.")
+            raise RuntimeError("ÐÐµÐ¸Ð·Ð²ÐµÑÑÐ½ÑÐ¹ ÑÐµÐ¶Ð¸Ð¼ Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐºÐ¸. ÐÐ°Ð¶Ð¼Ð¸ ÐºÐ½Ð¾Ð¿ÐºÑ Ð² Ð¼ÐµÐ½Ñ Ð¸ Ð¾ÑÐ¿ÑÐ°Ð²Ñ Ð²Ð¸Ð´ÐµÐ¾ Ð·Ð°Ð½Ð¾Ð²Ð¾.")
         if not output.exists() or output.stat().st_size == 0:
-            raise RuntimeError("FFmpeg не создал готовый видеофайл.")
+            raise RuntimeError("FFmpeg Ð½Ðµ ÑÐ¾Ð·Ð´Ð°Ð» Ð³Ð¾ÑÐ¾Ð²ÑÐ¹ Ð²Ð¸Ð´ÐµÐ¾ÑÐ°Ð¹Ð».")
         if output.stat().st_size > 49 * 1024 * 1024:
-            raise RuntimeError("Готовое видео превышает лимит отправки Telegram для этого бота. Попробуй более короткое видео.")
-        await message.answer("📤 Отправляю готовое видео…")
+            raise RuntimeError("ÐÐ¾ÑÐ¾Ð²Ð¾Ðµ Ð²Ð¸Ð´ÐµÐ¾ Ð¿ÑÐµÐ²ÑÑÐ°ÐµÑ Ð»Ð¸Ð¼Ð¸Ñ Ð¾ÑÐ¿ÑÐ°Ð²ÐºÐ¸ Telegram Ð´Ð»Ñ ÑÑÐ¾Ð³Ð¾ Ð±Ð¾ÑÐ°. ÐÐ¾Ð¿ÑÐ¾Ð±ÑÐ¹ Ð±Ð¾Ð»ÐµÐµ ÐºÐ¾ÑÐ¾ÑÐºÐ¾Ðµ Ð²Ð¸Ð´ÐµÐ¾.")
+        await message.answer("ð¤ ÐÑÐ¿ÑÐ°Ð²Ð»ÑÑ Ð³Ð¾ÑÐ¾Ð²Ð¾Ðµ Ð²Ð¸Ð´ÐµÐ¾â¦")
         await bot.send_video(message.chat.id, FSInputFile(str(output)), caption=caption, supports_streaming=True)
         with db_connect() as conn:
             conn.execute("UPDATE users SET total_tasks=total_tasks+1 WHERE user_id=?", (user_id,))
             conn.execute("INSERT INTO tasks(user_id,task_type,status,created_at,updated_at,output_name) VALUES(?,?,'done',?,?,?)", (user_id, action, now_text(), now_text(), output.name))
             conn.commit()
     except Exception as exc:
-        log.exception("Ошибка обработки видео")
+        log.exception("ÐÑÐ¸Ð±ÐºÐ° Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐºÐ¸ Ð²Ð¸Ð´ÐµÐ¾")
         with db_connect() as conn:
             conn.execute("INSERT INTO tasks(user_id,task_type,status,created_at,updated_at,error) VALUES(?,?,'error',?,?,?)", (user_id, action, now_text(), now_text(), str(exc)[:1000]))
             conn.commit()
-        send_admin_alert("video_processing_error", f"Пользователь: {user_id}\nОшибка: {type(exc).__name__}: {exc}")
+        send_admin_alert("video_processing_error", f"ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ: {user_id}\nÐÑÐ¸Ð±ÐºÐ°: {type(exc).__name__}: {exc}")
         reason = str(exc).replace("<", "&lt;").replace(">", "&gt;")[:1200]
-        await message.answer(f"❌ Не удалось обработать видео.\n<code>{reason}</code>\n\nЕсли ошибка повторится, пришли администратору последние строки Render Logs.")
+        await message.answer(f"â ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐ°ÑÑ Ð²Ð¸Ð´ÐµÐ¾.\n<code>{reason}</code>\n\nÐÑÐ»Ð¸ Ð¾ÑÐ¸Ð±ÐºÐ° Ð¿Ð¾Ð²ÑÐ¾ÑÐ¸ÑÑÑ, Ð¿ÑÐ¸ÑÐ»Ð¸ Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÑ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½Ð¸Ðµ ÑÑÑÐ¾ÐºÐ¸ Render Logs.")
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
         set_user_action(user_id, None)
@@ -610,16 +610,16 @@ async def media_handler(message: Message):
     if action in {"quality", "subtitles"}:
         await process_video(message, action)
         return
-    await message.answer("Видео получил! Сначала выбери в меню «🎬 Улучшить качество» или «💬 Добавить субтитры», затем отправь видео ещё раз.", reply_markup=main_keyboard())
+    await message.answer("ÐÐ¸Ð´ÐµÐ¾ Ð¿Ð¾Ð»ÑÑÐ¸Ð»! Ð¡Ð½Ð°ÑÐ°Ð»Ð° Ð²ÑÐ±ÐµÑÐ¸ Ð² Ð¼ÐµÐ½Ñ Â«ð¬ Ð£Ð»ÑÑÑÐ¸ÑÑ ÐºÐ°ÑÐµÑÑÐ²Ð¾Â» Ð¸Ð»Ð¸ Â«ð¬ ÐÐ¾Ð±Ð°Ð²Ð¸ÑÑ ÑÑÐ±ÑÐ¸ÑÑÑÂ», Ð·Ð°ÑÐµÐ¼ Ð¾ÑÐ¿ÑÐ°Ð²Ñ Ð²Ð¸Ð´ÐµÐ¾ ÐµÑÑ ÑÐ°Ð·.", reply_markup=main_keyboard())
 
 
 @dp.message(F.text)
 async def fallback_text(message: Message):
     text = (message.text or "").strip().lower()
-    if text in {"привет", "ку", "hello", "hi", "start"}:
+    if text in {"Ð¿ÑÐ¸Ð²ÐµÑ", "ÐºÑ", "hello", "hi", "start"}:
         await message.answer(welcome_text(), reply_markup=main_keyboard())
     else:
-        await message.answer("Выбери действие кнопкой меню или используй /help.", reply_markup=main_keyboard())
+        await message.answer("ÐÑÐ±ÐµÑÐ¸ Ð´ÐµÐ¹ÑÑÐ²Ð¸Ðµ ÐºÐ½Ð¾Ð¿ÐºÐ¾Ð¹ Ð¼ÐµÐ½Ñ Ð¸Ð»Ð¸ Ð¸ÑÐ¿Ð¾Ð»ÑÐ·ÑÐ¹ /help.", reply_markup=main_keyboard())
 
 
 async def bot_main():
@@ -633,7 +633,7 @@ def bot_thread_main():
     try:
         asyncio.run(bot_main())
     except Exception as exc:
-        log.exception("Telegram polling завершился с ошибкой")
+        log.exception("Telegram polling Ð·Ð°Ð²ÐµÑÑÐ¸Ð»ÑÑ Ñ Ð¾ÑÐ¸Ð±ÐºÐ¾Ð¹")
         # Can't safely send async alerts here after the loop has closed; Render Logs contain traceback.
 
 
