@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import asyncio
 import logging
 import os
@@ -54,7 +55,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger("deadbossbot")
 
 if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN Ð½Ðµ Ð·Ð°Ð´Ð°Ð½ Ð² Environment Variables Render")
+    raise RuntimeError("BOT_TOKEN \u043d\u0435 \u0437\u0430\u0434\u0430\u043d \u0432 Environment Variables Render")
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
@@ -178,40 +179,40 @@ def send_admin_alert(category: str, details: str):
     if now - last_admin_alerts.get(category, 0) < ALERT_COOLDOWN_SECONDS:
         return
     last_admin_alerts[category] = now
-    text = f"ð¨ <b>DeadBossBot alert</b>\nTime: {now_text()}\nCategory: {category}\n\n{details}"
+    text = f"\U0001f6a8 <b>DeadBossBot alert</b>\nTime: {now_text()}\nCategory: {category}\n\n{details}"
     async def _send():
         try:
             await bot.send_message(ADMIN_ID, text[:3900])
         except Exception:
-            log.exception("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¾ÑÐ¿ÑÐ°Ð²Ð¸ÑÑ ÑÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ðµ Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÑ")
+            log.exception("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0435 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0443")
     try:
         loop = asyncio.get_running_loop()
         loop.create_task(_send())
     except RuntimeError:
-        log.error("Admin alert Ð²Ð½Ðµ event loop: %s", text)
+        log.error("Admin alert \u0432\u043d\u0435 event loop: %s", text)
 
 
 def main_keyboard():
     return ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text="ð¬ Ð£Ð»ÑÑÑÐ¸ÑÑ ÐºÐ°ÑÐµÑÑÐ²Ð¾"), KeyboardButton(text="ð¬ ÐÐ¾Ð±Ð°Ð²Ð¸ÑÑ ÑÑÐ±ÑÐ¸ÑÑÑ")],
-        [KeyboardButton(text="â­ ÐÑÐ¿Ð¸ÑÑ PRO"), KeyboardButton(text="ð¤ ÐÑÐ¾ÑÐ¸Ð»Ñ")],
-        [KeyboardButton(text="ð  ÐÐ´Ð¼Ð¸Ð½")],
+        [KeyboardButton(text="\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e"), KeyboardButton(text="\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b")],
+        [KeyboardButton(text="\u2b50 \u041a\u0443\u043f\u0438\u0442\u044c PRO"), KeyboardButton(text="\U0001f464 \u041f\u0440\u043e\u0444\u0438\u043b\u044c")],
+        [KeyboardButton(text="\U0001f6e0 \u0410\u0434\u043c\u0438\u043d")],
     ], resize_keyboard=True)
 
 
 def admin_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="ð Ð¡ÑÐ°ÑÐ¸ÑÑÐ¸ÐºÐ°", callback_data="admin:stats"), InlineKeyboardButton(text="ð ÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ° Ð²ÐºÐ»/Ð²ÑÐºÐ»", callback_data="admin:toggle_processing")],
-        [InlineKeyboardButton(text="ð¥ ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ð¸", callback_data="admin:list_users")],
+        [InlineKeyboardButton(text="\U0001f4ca \u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430", callback_data="admin:stats"), InlineKeyboardButton(text="\U0001f504 \u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0432\u043a\u043b/\u0432\u044b\u043a\u043b", callback_data="admin:toggle_processing")],
+        [InlineKeyboardButton(text="\U0001f465 \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438", callback_data="admin:list_users")],
     ])
 
 
 def welcome_text():
-    return ("ÐÑÐ¸Ð²ÐµÑ! Ð¯ DeadBossBot.\n\n"
-            "ð¬ Ð£Ð»ÑÑÑÐ°Ñ Ð¸Ð·Ð¾Ð±ÑÐ°Ð¶ÐµÐ½Ð¸Ðµ Ð²Ð¸Ð´ÐµÐ¾ ÑÐ¸Ð»ÑÑÑÐ°Ð¼Ð¸.\n"
-            "ð¬ Ð Ð°ÑÐ¿Ð¾Ð·Ð½Ð°Ñ ÑÑÑÑÐºÑÑ ÑÐµÑÑ Ð¸ Ð´Ð¾Ð±Ð°Ð²Ð»ÑÑ ÑÑÐ±ÑÐ¸ÑÑÑ.\n"
-            "â­ PRO â Ð·Ð° Telegram Stars.\n\n"
-            "ÐÑÐ±ÐµÑÐ¸ Ð´ÐµÐ¹ÑÑÐ²Ð¸Ðµ Ð² Ð¼ÐµÐ½Ñ, Ð·Ð°ÑÐµÐ¼ Ð¾ÑÐ¿ÑÐ°Ð²Ñ Ð²Ð¸Ð´ÐµÐ¾.")
+    return ("\u041f\u0440\u0438\u0432\u0435\u0442! \u042f DeadBossBot.\n\n"
+            "\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0430\u044e \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0432\u0438\u0434\u0435\u043e \u0444\u0438\u043b\u044c\u0442\u0440\u0430\u043c\u0438.\n"
+            "\U0001f4ac \u0420\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u044e \u0440\u0443\u0441\u0441\u043a\u0443\u044e \u0440\u0435\u0447\u044c \u0438 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u044e \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b.\n"
+            "\u2b50 PRO \u2014 \u0437\u0430 Telegram Stars.\n\n"
+            "\u0412\u044b\u0431\u0435\u0440\u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0432 \u043c\u0435\u043d\u044e, \u0437\u0430\u0442\u0435\u043c \u043e\u0442\u043f\u0440\u0430\u0432\u044c \u0432\u0438\u0434\u0435\u043e.")
 
 
 @app.get("/")
@@ -233,7 +234,7 @@ async def start(message: Message):
 
 @dp.message(Command("help"))
 async def help_command(message: Message):
-    await message.answer("ÐÐ¾Ð¼Ð°Ð½Ð´Ñ: /start, /help, /profile, /admin, /cancel, /grantpro ID Ð´Ð½Ð¸, /revokepro ID")
+    await message.answer("\u041a\u043e\u043c\u0430\u043d\u0434\u044b: /start, /help, /profile, /admin, /cancel, /grantpro ID \u0434\u043d\u0438, /revokepro ID")
 
 
 async def send_profile(message: Message):
@@ -242,8 +243,8 @@ async def send_profile(message: Message):
     with db_connect() as conn:
         row = conn.execute("SELECT stars_balance, pro_until, total_tasks FROM users WHERE user_id=?", (user_id,)).fetchone()
     expiry = int(row["pro_until"] or 0)
-    pro_text = f"â PRO Ð´Ð¾ {datetime.fromtimestamp(expiry, timezone.utc).strftime('%d.%m.%Y %H:%M UTC')}" if expiry > int(time.time()) else "â PRO Ð½Ðµ Ð°ÐºÑÐ¸Ð²ÐµÐ½"
-    await message.answer(f"ð¤ <b>ÐÑÐ¾ÑÐ¸Ð»Ñ</b>\nID: <code>{user_id}</code>\nÐÐ°Ð»Ð°Ð½Ñ: {row['stars_balance']} â­\n{pro_text}\nÐÐ±ÑÐ°Ð±Ð¾ÑÐ°Ð½Ð¾ Ð²Ð¸Ð´ÐµÐ¾: {row['total_tasks']}")
+    pro_text = f"\u2705 PRO \u0434\u043e {datetime.fromtimestamp(expiry, timezone.utc).strftime('%d.%m.%Y %H:%M UTC')}" if expiry > int(time.time()) else "\u274c PRO \u043d\u0435 \u0430\u043a\u0442\u0438\u0432\u0435\u043d"
+    await message.answer(f"\U0001f464 <b>\u041f\u0440\u043e\u0444\u0438\u043b\u044c</b>\nID: <code>{user_id}</code>\n\u0411\u0430\u043b\u0430\u043d\u0441: {row['stars_balance']} \u2b50\n{pro_text}\n\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u043d\u043e \u0432\u0438\u0434\u0435\u043e: {row['total_tasks']}")
 
 
 @dp.message(Command("profile"))
@@ -256,13 +257,13 @@ async def admin_panel(message: Message):
         users = conn.execute("SELECT COUNT(*) c FROM users").fetchone()["c"]
         pros = conn.execute("SELECT COUNT(*) c FROM users WHERE pro_until>?", (int(time.time()),)).fetchone()["c"]
         tasks = conn.execute("SELECT COUNT(*) c FROM tasks").fetchone()["c"]
-    await message.answer(f"ð  <b>ÐÐ´Ð¼Ð¸Ð½-Ð¿Ð°Ð½ÐµÐ»Ñ</b>\nÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»ÐµÐ¹: {users}\nÐÐºÑÐ¸Ð²Ð½ÑÐ¹ PRO: {pros}\nÐÐ°Ð´Ð°Ñ Ð²ÑÐµÐ³Ð¾: {tasks}\nÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ°: {'Ð²ÐºÐ»ÑÑÐµÐ½Ð°' if get_setting('processing_enabled','1') == '1' else 'Ð²ÑÐºÐ»ÑÑÐµÐ½Ð°'}", reply_markup=admin_keyboard())
+    await message.answer(f"\U0001f6e0 <b>\u0410\u0434\u043c\u0438\u043d-\u043f\u0430\u043d\u0435\u043b\u044c</b>\n\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439: {users}\n\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0439 PRO: {pros}\n\u0417\u0430\u0434\u0430\u0447 \u0432\u0441\u0435\u0433\u043e: {tasks}\n\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430: {'\u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430' if get_setting('processing_enabled','1') == '1' else '\u0432\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u0430'}", reply_markup=admin_keyboard())
 
 
 @dp.message(Command("admin"))
 async def admin_command(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("ð« ÐÐ¾ÑÑÑÐ¿ ÑÐ¾Ð»ÑÐºÐ¾ Ð²Ð»Ð°Ð´ÐµÐ»ÑÑÑ.")
+        await message.answer("\U0001f6ab \u0414\u043e\u0441\u0442\u0443\u043f \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443.")
         return
     await admin_panel(message)
 
@@ -270,20 +271,20 @@ async def admin_command(message: Message):
 @dp.callback_query(F.data.startswith("admin:"))
 async def admin_callback(callback: CallbackQuery):
     if callback.from_user.id != ADMIN_ID:
-        await callback.answer("ÐÐ¾ÑÑÑÐ¿ Ð·Ð°Ð¿ÑÐµÑÑÐ½", show_alert=True)
+        await callback.answer("\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043f\u0440\u0435\u0449\u0451\u043d", show_alert=True)
         return
     if callback.data == "admin:toggle_processing":
         new = "0" if get_setting("processing_enabled", "1") == "1" else "1"
         set_setting("processing_enabled", new)
         if callback.message:
-            await callback.message.answer(f"ÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ° {'Ð²ÐºÐ»ÑÑÐµÐ½Ð°' if new == '1' else 'Ð²ÑÐºÐ»ÑÑÐµÐ½Ð°'}.")
+            await callback.message.answer(f"\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 {'\u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430' if new == '1' else '\u0432\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u0430'}.")
     elif callback.data == "admin:stats":
         if callback.message:
             await admin_panel(callback.message)
     elif callback.data == "admin:list_users":
         with db_connect() as conn:
             rows = conn.execute("SELECT user_id,username,stars_balance,pro_until FROM users ORDER BY user_id DESC LIMIT 10").fetchall()
-        text = "ð¥ <b>ÐÐ¾ÑÐ»ÐµÐ´Ð½Ð¸Ðµ Ð¿Ð¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ð¸</b>\n" + "\n".join(f"{r['user_id']} | @{r['username'] or 'â'} | {'PRO' if r['pro_until'] > int(time.time()) else 'â'} | {r['stars_balance']} â­" for r in rows)
+        text = "\U0001f465 <b>\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438</b>\n" + "\n".join(f"{r['user_id']} | @{r['username'] or '\u2014'} | {'PRO' if r['pro_until'] > int(time.time()) else '\u2014'} | {r['stars_balance']} \u2b50" for r in rows)
         if callback.message:
             await callback.message.answer(text[:3900])
     await callback.answer()
@@ -292,92 +293,92 @@ async def admin_callback(callback: CallbackQuery):
 @dp.message(Command("grantpro"))
 async def grantpro(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("ð« ÐÐ¾ÑÑÑÐ¿ ÑÐ¾Ð»ÑÐºÐ¾ Ð²Ð»Ð°Ð´ÐµÐ»ÑÑÑ.")
+        await message.answer("\U0001f6ab \u0414\u043e\u0441\u0442\u0443\u043f \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443.")
         return
     parts = (message.text or "").split()
     if len(parts) < 3 or not parts[2].isdigit() or int(parts[2]) < 1:
-        await message.answer("Ð¤Ð¾ÑÐ¼Ð°Ñ: /grantpro USER_ID ÐÐÐ")
+        await message.answer("\u0424\u043e\u0440\u043c\u0430\u0442: /grantpro USER_ID \u0414\u041d\u0418")
         return
     target = get_user_by_username_or_id(parts[1])
     if not target and parts[1].isdigit():
         ensure_user(int(parts[1]))
         target = {"user_id": int(parts[1])}
     if not target:
-        await message.answer("ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½. ÐÑÑÑÑ ÑÐ½Ð°ÑÐ°Ð»Ð° Ð½Ð°Ð¶Ð¼ÑÑ /start.")
+        await message.answer("\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d. \u041f\u0443\u0441\u0442\u044c \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u043d\u0430\u0436\u043c\u0451\u0442 /start.")
         return
     set_pro_for_user(int(target["user_id"]), int(parts[2]))
-    await message.answer(f"â PRO Ð²ÑÐ´Ð°Ð½ Ð½Ð° {parts[2]} Ð´Ð½ÐµÐ¹.")
+    await message.answer(f"\u2705 PRO \u0432\u044b\u0434\u0430\u043d \u043d\u0430 {parts[2]} \u0434\u043d\u0435\u0439.")
 
 
 @dp.message(Command("revokepro"))
 async def revokepro(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("ð« ÐÐ¾ÑÑÑÐ¿ ÑÐ¾Ð»ÑÐºÐ¾ Ð²Ð»Ð°Ð´ÐµÐ»ÑÑÑ.")
+        await message.answer("\U0001f6ab \u0414\u043e\u0441\u0442\u0443\u043f \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443.")
         return
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("Ð¤Ð¾ÑÐ¼Ð°Ñ: /revokepro USER_ID")
+        await message.answer("\u0424\u043e\u0440\u043c\u0430\u0442: /revokepro USER_ID")
         return
     target = get_user_by_username_or_id(parts[1])
     if not target:
-        await message.answer("ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½.")
+        await message.answer("\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.")
         return
     with db_connect() as conn:
         conn.execute("UPDATE users SET pro_until=0 WHERE user_id=?", (target["user_id"],))
         conn.commit()
-    await message.answer("â PRO Ð¾ÑÐºÐ»ÑÑÑÐ½.")
+    await message.answer("\u2705 PRO \u043e\u0442\u043a\u043b\u044e\u0447\u0451\u043d.")
 
 
 @dp.message(Command("cancel"))
 async def cancel(message: Message):
     set_user_action(message.from_user.id, None)
-    await message.answer("ð ÐÐµÐ¹ÑÑÐ²Ð¸Ðµ Ð¾ÑÐ¼ÐµÐ½ÐµÐ½Ð¾.", reply_markup=main_keyboard())
+    await message.answer("\U0001f6d1 \u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u043e.", reply_markup=main_keyboard())
 
 
-@dp.message(F.text == "ð¬ Ð£Ð»ÑÑÑÐ¸ÑÑ ÐºÐ°ÑÐµÑÑÐ²Ð¾")
+@dp.message(F.text == "\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e")
 async def quality_button(message: Message):
     set_user_action(message.from_user.id, "quality")
-    await message.answer("ð¹ ÐÑÐ¸ÑÐ»Ð¸ Ð²Ð¸Ð´ÐµÐ¾ ÑÐ°Ð¹Ð»Ð¾Ð¼ Ð¸Ð»Ð¸ Ð¾Ð±ÑÑÐ½ÑÐ¼ Ð²Ð¸Ð´ÐµÐ¾. Ð¯ Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐ°Ñ ÐµÐ³Ð¾ Ð¸ Ð¾ÑÐ¿ÑÐ°Ð²Ð»Ñ ÑÐµÐ·ÑÐ»ÑÑÐ°Ñ. ÐÐ»Ñ Ð¾ÑÐ¼ÐµÐ½Ñ â /cancel.")
+    await message.answer("\U0001f4f9 \u041f\u0440\u0438\u0448\u043b\u0438 \u0432\u0438\u0434\u0435\u043e \u0444\u0430\u0439\u043b\u043e\u043c \u0438\u043b\u0438 \u043e\u0431\u044b\u0447\u043d\u044b\u043c \u0432\u0438\u0434\u0435\u043e. \u042f \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u044e \u0435\u0433\u043e \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u044e \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442. \u0414\u043b\u044f \u043e\u0442\u043c\u0435\u043d\u044b \u2014 /cancel.")
 
 
-@dp.message(F.text == "ð¬ ÐÐ¾Ð±Ð°Ð²Ð¸ÑÑ ÑÑÐ±ÑÐ¸ÑÑÑ")
+@dp.message(F.text == "\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b")
 async def subtitles_button(message: Message):
     set_user_action(message.from_user.id, "subtitles")
-    await message.answer("ð¬ ÐÑÐ¸ÑÐ»Ð¸ Ð²Ð¸Ð´ÐµÐ¾ Ñ ÑÐµÑÑÑ. Ð¯ ÑÐ°ÑÐ¿Ð¾Ð·Ð½Ð°Ñ ÑÑÑÑÐºÑÑ ÑÐµÑÑ Ð¸ Ð²ÑÑÑÐ¾Ñ Ð¶Ð¸ÑÐ½ÑÐµ Ð±ÐµÐ»ÑÐµ ÑÑÐ±ÑÐ¸ÑÑÑ Ñ ÑÑÑÐ½Ð¾Ð¹ Ð¾Ð±Ð²Ð¾Ð´ÐºÐ¾Ð¹ ÑÑÑÑ Ð½Ð¸Ð¶Ðµ ÑÐµÑÐµÐ´Ð¸Ð½Ñ ÐºÐ°Ð´ÑÐ°. ÐÐ»Ñ Ð¾ÑÐ¼ÐµÐ½Ñ â /cancel.")
+    await message.answer("\U0001f3ac \u041f\u0440\u0438\u0448\u043b\u0438 \u0432\u0438\u0434\u0435\u043e \u0441 \u0440\u0435\u0447\u044c\u044e. \u042f \u0440\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u044e \u0440\u0443\u0441\u0441\u043a\u0443\u044e \u0440\u0435\u0447\u044c \u0438 \u0432\u0441\u0442\u0440\u043e\u044e \u0436\u0438\u0440\u043d\u044b\u0435 \u0431\u0435\u043b\u044b\u0435 \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b \u0441 \u0447\u0451\u0440\u043d\u043e\u0439 \u043e\u0431\u0432\u043e\u0434\u043a\u043e\u0439 \u0447\u0443\u0442\u044c \u043d\u0438\u0436\u0435 \u0441\u0435\u0440\u0435\u0434\u0438\u043d\u044b \u043a\u0430\u0434\u0440\u0430. \u0414\u043b\u044f \u043e\u0442\u043c\u0435\u043d\u044b \u2014 /cancel.")
 
 
-@dp.message(F.text == "â­ ÐÑÐ¿Ð¸ÑÑ PRO")
+@dp.message(F.text == "\u2b50 \u041a\u0443\u043f\u0438\u0442\u044c PRO")
 async def buy_pro(message: Message):
     user_id = message.from_user.id
     ensure_user(user_id, message.from_user.username, message.from_user.first_name)
     if is_pro_active(user_id):
-        await message.answer("â PRO Ñ ÑÐµÐ±Ñ ÑÐ¶Ðµ Ð°ÐºÑÐ¸Ð²ÐµÐ½.")
+        await message.answer("\u2705 PRO \u0443 \u0442\u0435\u0431\u044f \u0443\u0436\u0435 \u0430\u043a\u0442\u0438\u0432\u0435\u043d.")
         return
     payload = f"deadboss:pro:{PRO_DAYS}:{user_id}:{uuid.uuid4().hex}"
     try:
         await bot.send_invoice(
             chat_id=user_id,
             title="DeadBossBot PRO",
-            description=f"ÐÐ¾Ð´Ð¿Ð¸ÑÐºÐ° PRO Ð½Ð° {PRO_DAYS} Ð´Ð½ÐµÐ¹.",
+            description=f"\u041f\u043e\u0434\u043f\u0438\u0441\u043a\u0430 PRO \u043d\u0430 {PRO_DAYS} \u0434\u043d\u0435\u0439.",
             payload=payload,
             provider_token="",  # Required for Telegram Stars: empty string, not a provider token.
             currency="XTR",
-            prices=[LabeledPrice(label=f"PRO Ð½Ð° {PRO_DAYS} Ð´Ð½ÐµÐ¹", amount=PRO_PRICE_STARS)],
+            prices=[LabeledPrice(label=f"PRO \u043d\u0430 {PRO_DAYS} \u0434\u043d\u0435\u0439", amount=PRO_PRICE_STARS)],
         )
     except Exception as exc:
-        log.exception("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ ÑÐ¾Ð·Ð´Ð°ÑÑ ÑÑÑÑ Telegram Stars")
-        await message.answer(f"â ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ ÑÐ¾Ð·Ð´Ð°ÑÑ ÑÑÑÑ. ÐÑÐ¾Ð²ÐµÑÑ Ð½Ð°ÑÑÑÐ¾Ð¹ÐºÐ¸ Ð±Ð¾ÑÐ° Ð¸ Ð¿Ð¾Ð¿ÑÐ¾Ð±ÑÐ¹ Ð¿Ð¾Ð·Ð¶Ðµ.\nÐÑÐ¸ÑÐ¸Ð½Ð°: {type(exc).__name__}")
+        log.exception("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u0447\u0451\u0442 Telegram Stars")
+        await message.answer(f"\u274c \u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u0447\u0451\u0442. \u041f\u0440\u043e\u0432\u0435\u0440\u044c \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0431\u043e\u0442\u0430 \u0438 \u043f\u043e\u043f\u0440\u043e\u0431\u0443\u0439 \u043f\u043e\u0437\u0436\u0435.\n\u041f\u0440\u0438\u0447\u0438\u043d\u0430: {type(exc).__name__}")
 
 
-@dp.message(F.text == "ð¤ ÐÑÐ¾ÑÐ¸Ð»Ñ")
+@dp.message(F.text == "\U0001f464 \u041f\u0440\u043e\u0444\u0438\u043b\u044c")
 async def profile_button(message: Message):
     await send_profile(message)
 
 
-@dp.message(F.text == "ð  ÐÐ´Ð¼Ð¸Ð½")
+@dp.message(F.text == "\U0001f6e0 \u0410\u0434\u043c\u0438\u043d")
 async def admin_button(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("ð« ÐÐ¾ÑÑÑÐ¿ ÑÐ¾Ð»ÑÐºÐ¾ Ð²Ð»Ð°Ð´ÐµÐ»ÑÑÑ.")
+        await message.answer("\U0001f6ab \u0414\u043e\u0441\u0442\u0443\u043f \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443.")
         return
     await admin_panel(message)
 
@@ -393,7 +394,7 @@ async def pre_checkout(query: PreCheckoutQuery):
                  and query.currency == "XTR" and query.total_amount == PRO_PRICE_STARS)
     except Exception:
         valid = False
-    await bot.answer_pre_checkout_query(query.id, ok=valid, error_message=None if valid else "Ð¡ÑÑÑ Ð½ÐµÐ´ÐµÐ¹ÑÑÐ²Ð¸ÑÐµÐ»ÐµÐ½. ÐÑÐºÑÐ¾Ð¹ Ð¿Ð¾ÐºÑÐ¿ÐºÑ PRO Ð·Ð°Ð½Ð¾Ð²Ð¾.")
+    await bot.answer_pre_checkout_query(query.id, ok=valid, error_message=None if valid else "\u0421\u0447\u0451\u0442 \u043d\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u0435\u043d. \u041e\u0442\u043a\u0440\u043e\u0439 \u043f\u043e\u043a\u0443\u043f\u043a\u0443 PRO \u0437\u0430\u043d\u043e\u0432\u043e.")
 
 
 @dp.message(F.successful_payment)
@@ -405,13 +406,13 @@ async def successful_payment(message: Message):
     if not (len(parts) == 5 and parts[0] == "deadboss" and parts[1] == "pro"
             and parts[3].isdigit() and int(parts[3]) == user_id
             and payment.currency == "XTR" and payment.total_amount == PRO_PRICE_STARS):
-        log.error("ÐÐ¾Ð»ÑÑÐµÐ½ Ð¿Ð»Ð°ÑÑÐ¶ Ñ Ð½ÐµÐ¸Ð·Ð²ÐµÑÑÐ½ÑÐ¼ payload Ð¾Ñ user=%s", user_id)
-        await message.answer("â ï¸ ÐÐ»Ð°ÑÑÐ¶ Ð¿Ð¾Ð»ÑÑÐµÐ½, Ð½Ð¾ ÑÑÑÑ Ð½Ðµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¿ÑÐ¾Ð²ÐµÑÐ¸ÑÑ Ð°Ð²ÑÐ¾Ð¼Ð°ÑÐ¸ÑÐµÑÐºÐ¸. Ð¡Ð²ÑÐ¶Ð¸ÑÑ Ñ Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÐ¾Ð¼.")
-        send_admin_alert("payment_validation", f"ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ {user_id}; payload={payment.invoice_payload!r}; currency={payment.currency}; amount={payment.total_amount}")
+        log.error("\u041f\u043e\u043b\u0443\u0447\u0435\u043d \u043f\u043b\u0430\u0442\u0451\u0436 \u0441 \u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u044b\u043c payload \u043e\u0442 user=%s", user_id)
+        await message.answer("\u26a0\ufe0f \u041f\u043b\u0430\u0442\u0451\u0436 \u043f\u043e\u043b\u0443\u0447\u0435\u043d, \u043d\u043e \u0441\u0447\u0451\u0442 \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438. \u0421\u0432\u044f\u0436\u0438\u0441\u044c \u0441 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c.")
+        send_admin_alert("payment_validation", f"\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c {user_id}; payload={payment.invoice_payload!r}; currency={payment.currency}; amount={payment.total_amount}")
         return
     charge_id = payment.telegram_payment_charge_id
     if not charge_id:
-        await message.answer("â ï¸ ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¿ÑÐ¾Ð²ÐµÑÐ¸ÑÑ Ð¸Ð´ÐµÐ½ÑÐ¸ÑÐ¸ÐºÐ°ÑÐ¾Ñ Ð¿Ð»Ð°ÑÐµÐ¶Ð°. Ð¡Ð²ÑÐ¶Ð¸ÑÑ Ñ Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÐ¾Ð¼.")
+        await message.answer("\u26a0\ufe0f \u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440 \u043f\u043b\u0430\u0442\u0435\u0436\u0430. \u0421\u0432\u044f\u0436\u0438\u0441\u044c \u0441 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c.")
         return
 
     # Insert charge and extend PRO in one DB transaction. UNIQUE charge_id prevents duplicate credit.
@@ -421,7 +422,7 @@ async def successful_payment(message: Message):
         exists = conn.execute("SELECT id FROM payments WHERE charge_id=?", (charge_id,)).fetchone()
         if exists:
             conn.rollback()
-            await message.answer("â Ð­ÑÐ¾Ñ Ð¿Ð»Ð°ÑÑÐ¶ ÑÐ¶Ðµ ÑÑÑÑÐ½. PRO Ð¿Ð¾Ð²ÑÐ¾ÑÐ½Ð¾ Ð½Ðµ Ð½Ð°ÑÐ¸ÑÐ»ÑÐ»ÑÑ.")
+            await message.answer("\u2705 \u042d\u0442\u043e\u0442 \u043f\u043b\u0430\u0442\u0451\u0436 \u0443\u0436\u0435 \u0443\u0447\u0442\u0451\u043d. PRO \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u043e \u043d\u0435 \u043d\u0430\u0447\u0438\u0441\u043b\u044f\u043b\u0441\u044f.")
             return
         conn.execute("INSERT INTO payments(user_id,payload,amount_stars,currency,charge_id,status,created_at) VALUES(?,?,?,?,?,'paid',?)",
                      (user_id, payment.invoice_payload, int(payment.total_amount), payment.currency, charge_id, now_text()))
@@ -433,24 +434,24 @@ async def successful_payment(message: Message):
         conn.commit()
     except Exception:
         conn.rollback()
-        log.exception("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð·Ð°Ð¿Ð¸ÑÐ°ÑÑ Ð¿Ð»Ð°ÑÑÐ¶/PRO")
+        log.exception("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c \u043f\u043b\u0430\u0442\u0451\u0436/PRO")
         send_admin_alert("payment_db_error", f"User {user_id}; charge {charge_id}")
-        await message.answer("â ï¸ Telegram Ð¿Ð¾Ð´ÑÐ²ÐµÑÐ´Ð¸Ð» Ð¿Ð»Ð°ÑÑÐ¶, Ð½Ð¾ Ð¾Ð±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸Ðµ PRO Ð²ÑÐµÐ¼ÐµÐ½Ð½Ð¾ Ð½Ðµ ÑÐ´Ð°Ð»Ð¾ÑÑ. ÐÐ´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾Ñ ÑÐ²ÐµÐ´Ð¾Ð¼Ð»ÑÐ½; Ð½Ðµ Ð¾Ð¿Ð»Ð°ÑÐ¸Ð²Ð°Ð¹ Ð¿Ð¾Ð²ÑÐ¾ÑÐ½Ð¾.")
+        await message.answer("\u26a0\ufe0f Telegram \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u043b \u043f\u043b\u0430\u0442\u0451\u0436, \u043d\u043e \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 PRO \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c. \u0410\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440 \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0451\u043d; \u043d\u0435 \u043e\u043f\u043b\u0430\u0447\u0438\u0432\u0430\u0439 \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u043e.")
         return
     finally:
         conn.close()
-    await message.answer(f"ð ÐÐ¿Ð»Ð°ÑÐ° Ð¿Ð¾Ð´ÑÐ²ÐµÑÐ¶Ð´ÐµÐ½Ð°! PRO Ð°ÐºÑÐ¸Ð²Ð¸ÑÐ¾Ð²Ð°Ð½ Ð½Ð° {PRO_DAYS} Ð´Ð½ÐµÐ¹ Ð·Ð° {PRO_PRICE_STARS} â­.")
+    await message.answer(f"\U0001f389 \u041e\u043f\u043b\u0430\u0442\u0430 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0430! PRO \u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u043d \u043d\u0430 {PRO_DAYS} \u0434\u043d\u0435\u0439 \u0437\u0430 {PRO_PRICE_STARS} \u2b50.")
 
 
 def run_command(command: list[str], timeout: int | None = None):
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError as exc:
-        raise RuntimeError("FFmpeg Ð½Ðµ ÑÑÑÐ°Ð½Ð¾Ð²Ð»ÐµÐ½ Ð½Ð° ÑÐµÑÐ²ÐµÑÐµ Render. Ð£ÑÑÐ°Ð½Ð¾Ð²Ð¸ FFmpeg Ð² Ð¾ÐºÑÑÐ¶ÐµÐ½Ð¸Ð¸.") from exc
+        raise RuntimeError("FFmpeg \u043d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d \u043d\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 Render. \u0423\u0441\u0442\u0430\u043d\u043e\u0432\u0438 FFmpeg \u0432 \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u0438.") from exc
     except subprocess.TimeoutExpired as exc:
-        raise RuntimeError("ÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ° Ð¿ÑÐµÐ²ÑÑÐ¸Ð»Ð° Ð´Ð¾Ð¿ÑÑÑÐ¸Ð¼Ð¾Ðµ Ð²ÑÐµÐ¼Ñ.") from exc
+        raise RuntimeError("\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u043f\u0440\u0435\u0432\u044b\u0441\u0438\u043b\u0430 \u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u043e\u0435 \u0432\u0440\u0435\u043c\u044f.") from exc
     if result.returncode != 0:
-        error = (result.stderr or result.stdout or "ÐÐµÐ¸Ð·Ð²ÐµÑÑÐ½Ð°Ñ Ð¾ÑÐ¸Ð±ÐºÐ° FFmpeg").strip()
+        error = (result.stderr or result.stdout or "\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430 FFmpeg").strip()
         raise RuntimeError(error[-1800:])
     return result.stdout.strip()
 
@@ -459,7 +460,7 @@ def probe_video(path: Path) -> tuple[int, int]:
     output = run_command(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", str(path)], timeout=30)
     match = re.match(r"(\d+)x(\d+)", output)
     if not match:
-        raise RuntimeError("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¾Ð¿ÑÐµÐ´ÐµÐ»Ð¸ÑÑ ÑÐ°Ð·Ð¼ÐµÑ Ð²Ð¸Ð´ÐµÐ¾.")
+        raise RuntimeError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0440\u0430\u0437\u043c\u0435\u0440 \u0432\u0438\u0434\u0435\u043e.")
     return int(match.group(1)), int(match.group(2))
 
 
@@ -474,7 +475,7 @@ def improve_video(input_path: Path, output_path: Path):
 
 def transcribe_to_srt(input_path: Path, work_dir: Path) -> Path:
     if WhisperModel is None:
-        raise RuntimeError("ÐÐµ ÑÑÑÐ°Ð½Ð¾Ð²Ð»ÐµÐ½Ð° Ð±Ð¸Ð±Ð»Ð¸Ð¾ÑÐµÐºÐ° faster-whisper. ÐÐ¾Ð±Ð°Ð²Ñ ÐµÑ Ð² requirements.txt.")
+        raise RuntimeError("\u041d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0430 \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0430 faster-whisper. \u0414\u043e\u0431\u0430\u0432\u044c \u0435\u0451 \u0432 requirements.txt.")
     audio_path = work_dir / "audio.wav"
     run_command(["ffmpeg", "-hide_banner", "-y", "-i", str(input_path), "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(audio_path)], timeout=600)
     model_name = os.getenv("WHISPER_MODEL", "base")
@@ -490,13 +491,13 @@ def transcribe_to_srt(input_path: Path, work_dir: Path) -> Path:
     count = 0
     with srt_path.open("w", encoding="utf-8") as file:
         for seg in segments:
-            text = " ".join((seg.text or "").split()).replace("-->", "â>")
+            text = " ".join((seg.text or "").split()).replace("-->", "\u2014>")
             if not text:
                 continue
             count += 1
             file.write(f"{count}\n{stamp(seg.start)} --> {stamp(seg.end)}\n{text}\n\n")
     if count == 0:
-        raise RuntimeError("ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ ÑÐ°ÑÐ¿Ð¾Ð·Ð½Ð°ÑÑ ÑÐµÑÑ. Ð£Ð±ÐµÐ´Ð¸ÑÑ, ÑÑÐ¾ Ð² Ð²Ð¸Ð´ÐµÐ¾ ÑÐ»ÑÑÐ½Ð° ÑÐµÑÑ.")
+        raise RuntimeError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0440\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u0442\u044c \u0440\u0435\u0447\u044c. \u0423\u0431\u0435\u0434\u0438\u0441\u044c, \u0447\u0442\u043e \u0432 \u0432\u0438\u0434\u0435\u043e \u0441\u043b\u044b\u0448\u043d\u0430 \u0440\u0435\u0447\u044c.")
     return srt_path
 
 
@@ -541,24 +542,24 @@ async def process_video(message: Message, action: str):
     user_id = message.from_user.id
     file_obj = message.video or message.document
     if file_obj is None:
-        await message.answer("ÐÑÐ¸ÑÐ»Ð¸ Ð²Ð¸Ð´ÐµÐ¾, Ð¿Ð¾Ð¶Ð°Ð»ÑÐ¹ÑÑÐ°.")
+        await message.answer("\u041f\u0440\u0438\u0448\u043b\u0438 \u0432\u0438\u0434\u0435\u043e, \u043f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430.")
         return
     if message.document and not (message.document.mime_type or "").startswith("video/"):
-        await message.answer("Ð­ÑÐ¾ Ð½Ðµ Ð¿Ð¾ÑÐ¾Ð¶Ðµ Ð½Ð° Ð²Ð¸Ð´ÐµÐ¾ÑÐ°Ð¹Ð». ÐÑÐ¿ÑÐ°Ð²Ñ Ð²Ð¸Ð´ÐµÐ¾ ÐºÐ°Ðº Ð²Ð¸Ð´ÐµÐ¾ Ð¸Ð»Ð¸ Ð´Ð¾ÐºÑÐ¼ÐµÐ½Ñ Ñ ÑÐ¸Ð¿Ð¾Ð¼ video/.")
+        await message.answer("\u042d\u0442\u043e \u043d\u0435 \u043f\u043e\u0445\u043e\u0436\u0435 \u043d\u0430 \u0432\u0438\u0434\u0435\u043e\u0444\u0430\u0439\u043b. \u041e\u0442\u043f\u0440\u0430\u0432\u044c \u0432\u0438\u0434\u0435\u043e \u043a\u0430\u043a \u0432\u0438\u0434\u0435\u043e \u0438\u043b\u0438 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441 \u0442\u0438\u043f\u043e\u043c video/.")
         return
     file_size = getattr(file_obj, "file_size", None) or 0
     if file_size and file_size > MAX_VIDEO_MB * 1024 * 1024:
-        await message.answer(f"Ð¤Ð°Ð¹Ð» ÑÐ»Ð¸ÑÐºÐ¾Ð¼ Ð±Ð¾Ð»ÑÑÐ¾Ð¹. ÐÐ°ÐºÑÐ¸Ð¼Ð°Ð»ÑÐ½ÑÐ¹ ÑÐ°Ð·Ð¼ÐµÑ Ð´Ð»Ñ ÑÑÐ¾Ð³Ð¾ Ð±Ð¾ÑÐ°: {MAX_VIDEO_MB} ÐÐ.")
+        await message.answer(f"\u0424\u0430\u0439\u043b \u0441\u043b\u0438\u0448\u043a\u043e\u043c \u0431\u043e\u043b\u044c\u0448\u043e\u0439. \u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439 \u0440\u0430\u0437\u043c\u0435\u0440 \u0434\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u0431\u043e\u0442\u0430: {MAX_VIDEO_MB} \u041c\u0411.")
         set_user_action(user_id, None)
         return
     if get_setting("processing_enabled", "1") != "1" and user_id != ADMIN_ID:
-        await message.answer("â¸ ÐÐ±ÑÐ°Ð±Ð¾ÑÐºÐ° Ð²ÑÐµÐ¼ÐµÐ½Ð½Ð¾ Ð¾ÑÐºÐ»ÑÑÐµÐ½Ð° Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÐ¾Ð¼.")
+        await message.answer("\u23f8 \u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043e\u0442\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c.")
         return
 
     work_dir = TMP_DIR / f"job_{user_id}_{uuid.uuid4().hex[:8]}"
     work_dir.mkdir(parents=True, exist_ok=True)
     try:
-        await message.answer("ð¥ Ð¡ÐºÐ°ÑÐ¸Ð²Ð°Ñ Ð²Ð¸Ð´ÐµÐ¾â¦")
+        await message.answer("\U0001f4e5 \u0421\u043a\u0430\u0447\u0438\u0432\u0430\u044e \u0432\u0438\u0434\u0435\u043e\u2026")
         file_info = await bot.get_file(file_obj.file_id)
         original_name = getattr(file_obj, "file_name", None) or "input.mp4"
         suffix = Path(original_name).suffix.lower()
@@ -567,36 +568,36 @@ async def process_video(message: Message, action: str):
         source = work_dir / f"input{suffix}"
         await bot.download_file(file_info.file_path, destination=source)
         if not source.exists() or source.stat().st_size == 0:
-            raise RuntimeError("Telegram Ð½Ðµ ÑÐºÐ°ÑÐ°Ð» Ð²Ð¸Ð´ÐµÐ¾ Ð¸Ð»Ð¸ ÑÐ°Ð¹Ð» Ð¿ÑÑÑÐ¾Ð¹.")
+            raise RuntimeError("Telegram \u043d\u0435 \u0441\u043a\u0430\u0447\u0430\u043b \u0432\u0438\u0434\u0435\u043e \u0438\u043b\u0438 \u0444\u0430\u0439\u043b \u043f\u0443\u0441\u0442\u043e\u0439.")
         output = work_dir / "processed.mp4"
         if action == "quality":
-            await message.answer("ð  Ð£Ð»ÑÑÑÐ°Ñ Ð¸Ð·Ð¾Ð±ÑÐ°Ð¶ÐµÐ½Ð¸Ðµ ÑÐµÑÐµÐ· FFmpegâ¦")
+            await message.answer("\U0001f6e0 \u0423\u043b\u0443\u0447\u0448\u0430\u044e \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0447\u0435\u0440\u0435\u0437 FFmpeg\u2026")
             await asyncio.to_thread(improve_video, source, output)
-            caption = "â ÐÐ¾ÑÐ¾Ð²Ð¾! ÐÐ¸Ð´ÐµÐ¾ Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐ°Ð½Ð¾: ÑÐ»ÑÑÑÐµÐ½Ñ ÐºÐ¾Ð½ÑÑÐ°ÑÑÐ½Ð¾ÑÑÑ, Ð½Ð°ÑÑÑÐµÐ½Ð½Ð¾ÑÑÑ Ð¸ ÑÐµÐ·ÐºÐ¾ÑÑÑ."
+            caption = "\u2705 \u0413\u043e\u0442\u043e\u0432\u043e! \u0412\u0438\u0434\u0435\u043e \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u043d\u043e: \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u044b \u043a\u043e\u043d\u0442\u0440\u0430\u0441\u0442\u043d\u043e\u0441\u0442\u044c, \u043d\u0430\u0441\u044b\u0449\u0435\u043d\u043d\u043e\u0441\u0442\u044c \u0438 \u0440\u0435\u0437\u043a\u043e\u0441\u0442\u044c."
         elif action == "subtitles":
-            await message.answer("ð Ð Ð°ÑÐ¿Ð¾Ð·Ð½Ð°Ñ ÑÐµÑÑ Ð¸ Ð²ÑÑÑÐ°Ð¸Ð²Ð°Ñ ÑÑÐ±ÑÐ¸ÑÑÑ. Ð­ÑÐ¾ Ð¼Ð¾Ð¶ÐµÑ Ð·Ð°Ð½ÑÑÑ Ð½ÐµÑÐºÐ¾Ð»ÑÐºÐ¾ Ð¼Ð¸Ð½ÑÑâ¦")
+            await message.answer("\U0001f4dd \u0420\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u044e \u0440\u0435\u0447\u044c \u0438 \u0432\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b. \u042d\u0442\u043e \u043c\u043e\u0436\u0435\u0442 \u0437\u0430\u043d\u044f\u0442\u044c \u043d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043c\u0438\u043d\u0443\u0442\u2026")
             await asyncio.to_thread(add_subtitles, source, output, work_dir)
-            caption = "â ÐÐ¾ÑÐ¾Ð²Ð¾! ÐÐ¾Ð±Ð°Ð²Ð»ÐµÐ½Ñ Ð¶Ð¸ÑÐ½ÑÐµ Ð±ÐµÐ»ÑÐµ ÑÑÐ±ÑÐ¸ÑÑÑ Ñ ÑÑÑÐ½Ð¾Ð¹ Ð¾Ð±Ð²Ð¾Ð´ÐºÐ¾Ð¹ ÑÑÑÑ Ð½Ð¸Ð¶Ðµ ÑÐµÑÐµÐ´Ð¸Ð½Ñ ÐºÐ°Ð´ÑÐ°."
+            caption = "\u2705 \u0413\u043e\u0442\u043e\u0432\u043e! \u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u044b \u0436\u0438\u0440\u043d\u044b\u0435 \u0431\u0435\u043b\u044b\u0435 \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b \u0441 \u0447\u0451\u0440\u043d\u043e\u0439 \u043e\u0431\u0432\u043e\u0434\u043a\u043e\u0439 \u0447\u0443\u0442\u044c \u043d\u0438\u0436\u0435 \u0441\u0435\u0440\u0435\u0434\u0438\u043d\u044b \u043a\u0430\u0434\u0440\u0430."
         else:
-            raise RuntimeError("ÐÐµÐ¸Ð·Ð²ÐµÑÑÐ½ÑÐ¹ ÑÐµÐ¶Ð¸Ð¼ Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐºÐ¸. ÐÐ°Ð¶Ð¼Ð¸ ÐºÐ½Ð¾Ð¿ÐºÑ Ð² Ð¼ÐµÐ½Ñ Ð¸ Ð¾ÑÐ¿ÑÐ°Ð²Ñ Ð²Ð¸Ð´ÐµÐ¾ Ð·Ð°Ð½Ð¾Ð²Ð¾.")
+            raise RuntimeError("\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u044b\u0439 \u0440\u0435\u0436\u0438\u043c \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438. \u041d\u0430\u0436\u043c\u0438 \u043a\u043d\u043e\u043f\u043a\u0443 \u0432 \u043c\u0435\u043d\u044e \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u044c \u0432\u0438\u0434\u0435\u043e \u0437\u0430\u043d\u043e\u0432\u043e.")
         if not output.exists() or output.stat().st_size == 0:
-            raise RuntimeError("FFmpeg Ð½Ðµ ÑÐ¾Ð·Ð´Ð°Ð» Ð³Ð¾ÑÐ¾Ð²ÑÐ¹ Ð²Ð¸Ð´ÐµÐ¾ÑÐ°Ð¹Ð».")
+            raise RuntimeError("FFmpeg \u043d\u0435 \u0441\u043e\u0437\u0434\u0430\u043b \u0433\u043e\u0442\u043e\u0432\u044b\u0439 \u0432\u0438\u0434\u0435\u043e\u0444\u0430\u0439\u043b.")
         if output.stat().st_size > 49 * 1024 * 1024:
-            raise RuntimeError("ÐÐ¾ÑÐ¾Ð²Ð¾Ðµ Ð²Ð¸Ð´ÐµÐ¾ Ð¿ÑÐµÐ²ÑÑÐ°ÐµÑ Ð»Ð¸Ð¼Ð¸Ñ Ð¾ÑÐ¿ÑÐ°Ð²ÐºÐ¸ Telegram Ð´Ð»Ñ ÑÑÐ¾Ð³Ð¾ Ð±Ð¾ÑÐ°. ÐÐ¾Ð¿ÑÐ¾Ð±ÑÐ¹ Ð±Ð¾Ð»ÐµÐµ ÐºÐ¾ÑÐ¾ÑÐºÐ¾Ðµ Ð²Ð¸Ð´ÐµÐ¾.")
-        await message.answer("ð¤ ÐÑÐ¿ÑÐ°Ð²Ð»ÑÑ Ð³Ð¾ÑÐ¾Ð²Ð¾Ðµ Ð²Ð¸Ð´ÐµÐ¾â¦")
+            raise RuntimeError("\u0413\u043e\u0442\u043e\u0432\u043e\u0435 \u0432\u0438\u0434\u0435\u043e \u043f\u0440\u0435\u0432\u044b\u0448\u0430\u0435\u0442 \u043b\u0438\u043c\u0438\u0442 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0438 Telegram \u0434\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u0431\u043e\u0442\u0430. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439 \u0431\u043e\u043b\u0435\u0435 \u043a\u043e\u0440\u043e\u0442\u043a\u043e\u0435 \u0432\u0438\u0434\u0435\u043e.")
+        await message.answer("\U0001f4e4 \u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u044e \u0433\u043e\u0442\u043e\u0432\u043e\u0435 \u0432\u0438\u0434\u0435\u043e\u2026")
         await bot.send_video(message.chat.id, FSInputFile(str(output)), caption=caption, supports_streaming=True)
         with db_connect() as conn:
             conn.execute("UPDATE users SET total_tasks=total_tasks+1 WHERE user_id=?", (user_id,))
             conn.execute("INSERT INTO tasks(user_id,task_type,status,created_at,updated_at,output_name) VALUES(?,?,'done',?,?,?)", (user_id, action, now_text(), now_text(), output.name))
             conn.commit()
     except Exception as exc:
-        log.exception("ÐÑÐ¸Ð±ÐºÐ° Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐºÐ¸ Ð²Ð¸Ð´ÐµÐ¾")
+        log.exception("\u041e\u0448\u0438\u0431\u043a\u0430 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438 \u0432\u0438\u0434\u0435\u043e")
         with db_connect() as conn:
             conn.execute("INSERT INTO tasks(user_id,task_type,status,created_at,updated_at,error) VALUES(?,?,'error',?,?,?)", (user_id, action, now_text(), now_text(), str(exc)[:1000]))
             conn.commit()
-        send_admin_alert("video_processing_error", f"ÐÐ¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ: {user_id}\nÐÑÐ¸Ð±ÐºÐ°: {type(exc).__name__}: {exc}")
+        send_admin_alert("video_processing_error", f"\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c: {user_id}\n\u041e\u0448\u0438\u0431\u043a\u0430: {type(exc).__name__}: {exc}")
         reason = str(exc).replace("<", "&lt;").replace(">", "&gt;")[:1200]
-        await message.answer(f"â ÐÐµ ÑÐ´Ð°Ð»Ð¾ÑÑ Ð¾Ð±ÑÐ°Ð±Ð¾ÑÐ°ÑÑ Ð²Ð¸Ð´ÐµÐ¾.\n<code>{reason}</code>\n\nÐÑÐ»Ð¸ Ð¾ÑÐ¸Ð±ÐºÐ° Ð¿Ð¾Ð²ÑÐ¾ÑÐ¸ÑÑÑ, Ð¿ÑÐ¸ÑÐ»Ð¸ Ð°Ð´Ð¼Ð¸Ð½Ð¸ÑÑÑÐ°ÑÐ¾ÑÑ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½Ð¸Ðµ ÑÑÑÐ¾ÐºÐ¸ Render Logs.")
+        await message.answer(f"\u274c \u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u0442\u044c \u0432\u0438\u0434\u0435\u043e.\n<code>{reason}</code>\n\n\u0415\u0441\u043b\u0438 \u043e\u0448\u0438\u0431\u043a\u0430 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0441\u044f, \u043f\u0440\u0438\u0448\u043b\u0438 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0443 \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u0441\u0442\u0440\u043e\u043a\u0438 Render Logs.")
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
         set_user_action(user_id, None)
@@ -610,16 +611,16 @@ async def media_handler(message: Message):
     if action in {"quality", "subtitles"}:
         await process_video(message, action)
         return
-    await message.answer("ÐÐ¸Ð´ÐµÐ¾ Ð¿Ð¾Ð»ÑÑÐ¸Ð»! Ð¡Ð½Ð°ÑÐ°Ð»Ð° Ð²ÑÐ±ÐµÑÐ¸ Ð² Ð¼ÐµÐ½Ñ Â«ð¬ Ð£Ð»ÑÑÑÐ¸ÑÑ ÐºÐ°ÑÐµÑÑÐ²Ð¾Â» Ð¸Ð»Ð¸ Â«ð¬ ÐÐ¾Ð±Ð°Ð²Ð¸ÑÑ ÑÑÐ±ÑÐ¸ÑÑÑÂ», Ð·Ð°ÑÐµÐ¼ Ð¾ÑÐ¿ÑÐ°Ð²Ñ Ð²Ð¸Ð´ÐµÐ¾ ÐµÑÑ ÑÐ°Ð·.", reply_markup=main_keyboard())
+    await message.answer("\u0412\u0438\u0434\u0435\u043e \u043f\u043e\u043b\u0443\u0447\u0438\u043b! \u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0432\u044b\u0431\u0435\u0440\u0438 \u0432 \u043c\u0435\u043d\u044e \u00ab\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e\u00bb \u0438\u043b\u0438 \u00ab\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b\u00bb, \u0437\u0430\u0442\u0435\u043c \u043e\u0442\u043f\u0440\u0430\u0432\u044c \u0432\u0438\u0434\u0435\u043e \u0435\u0449\u0451 \u0440\u0430\u0437.", reply_markup=main_keyboard())
 
 
 @dp.message(F.text)
 async def fallback_text(message: Message):
     text = (message.text or "").strip().lower()
-    if text in {"Ð¿ÑÐ¸Ð²ÐµÑ", "ÐºÑ", "hello", "hi", "start"}:
+    if text in {"\u043f\u0440\u0438\u0432\u0435\u0442", "\u043a\u0443", "hello", "hi", "start"}:
         await message.answer(welcome_text(), reply_markup=main_keyboard())
     else:
-        await message.answer("ÐÑÐ±ÐµÑÐ¸ Ð´ÐµÐ¹ÑÑÐ²Ð¸Ðµ ÐºÐ½Ð¾Ð¿ÐºÐ¾Ð¹ Ð¼ÐµÐ½Ñ Ð¸Ð»Ð¸ Ð¸ÑÐ¿Ð¾Ð»ÑÐ·ÑÐ¹ /help.", reply_markup=main_keyboard())
+        await message.answer("\u0412\u044b\u0431\u0435\u0440\u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043a\u043d\u043e\u043f\u043a\u043e\u0439 \u043c\u0435\u043d\u044e \u0438\u043b\u0438 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439 /help.", reply_markup=main_keyboard())
 
 
 async def bot_main():
@@ -633,7 +634,7 @@ def bot_thread_main():
     try:
         asyncio.run(bot_main())
     except Exception as exc:
-        log.exception("Telegram polling Ð·Ð°Ð²ÐµÑÑÐ¸Ð»ÑÑ Ñ Ð¾ÑÐ¸Ð±ÐºÐ¾Ð¹")
+        log.exception("Telegram polling \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b\u0441\u044f \u0441 \u043e\u0448\u0438\u0431\u043a\u043e\u0439")
         # Can't safely send async alerts here after the loop has closed; Render Logs contain traceback.
 
 
