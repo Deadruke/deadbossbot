@@ -1,22 +1,24 @@
-FROM python:3.12-slim
+
+FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1
-ENV PORT=10000
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    fontconfig \
-    fonts-liberation \
-    fonts-dejavu-core \
-    && rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    fonts-dejavu-core \
+    fonts-liberation \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt
 
 COPY . .
-
-EXPOSE 10000
 
 CMD ["python", "main.py"]
