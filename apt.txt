@@ -1,1 +1,4 @@
 ffmpeg
+fonts-dejavu-core
+fonts-liberation
+
