@@ -626,7 +626,7 @@ async def bot_main():
     ensure_db()
     log.info("Starting DeadBossBot polling")
     await bot.delete_webhook(drop_pending_updates=False)
-    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types(), handle_signals=False)
 
 
 def bot_thread_main():
