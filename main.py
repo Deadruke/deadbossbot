@@ -8,7 +8,6 @@ import sqlite3
 import subprocess
 import threading
 import time
-import traceback
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,7 +36,11 @@ except Exception:
 
 # Render Environment Variables
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0") or "0")
+try:
+    ADMIN_ID = int(os.getenv("ADMIN_ID", "0") or "0")
+except ValueError:
+    ADMIN_ID = 0
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "nishtyakcom").strip().lstrip("@").lower()
 PORT = int(os.getenv("PORT", "10000") or "10000")
 # Telegram Stars use currency XTR and an EMPTY provider_token. This variable is not required.
 PRO_PRICE_STARS = max(1, int(os.getenv("PRO_PRICE_STARS", "150") or "150"))
@@ -64,8 +67,30 @@ last_admin_alerts: dict[str, float] = {}
 ALERT_COOLDOWN_SECONDS = 300
 MODEL_CACHE = {}
 MODEL_LOCK = threading.Lock()
+PROCESSING_LOCK = asyncio.Lock()
+PROCESSING_OFF_TEXT = "Бот временно не работает ⚒️"
 SUBTITLE_FONTS = {"sans": "DejaVu Sans", "serif": "DejaVu Serif", "mono": "DejaVu Sans Mono", "liberation": "Liberation Sans"}
 SUBTITLE_COLORS = {"white": ("Белый", "&H00FFFFFF"), "yellow": ("Жёлтый", "&H0000FFFF"), "cyan": ("Голубой", "&H00FFFF00"), "green": ("Зелёный", "&H0000FF00"), "pink": ("Розовый", "&H00FF00FF")}
+
+
+def is_admin(user) -> bool:
+    """ADMIN_ID is authoritative; username is the fallback if ADMIN_ID is not configured."""
+    if user is None:
+        return False
+    if ADMIN_ID > 0 and int(user.id) == ADMIN_ID:
+        return True
+    return (getattr(user, "username", "") or "").strip().lstrip("@").lower() == ADMIN_USERNAME
+
+
+def processing_enabled() -> bool:
+    return get_setting("processing_enabled", "1") == "1"
+
+
+async def reject_if_processing_disabled(message: Message) -> bool:
+    if processing_enabled():
+        return False
+    await message.answer(PROCESSING_OFF_TEXT)
+    return True
 
 
 def now_text() -> str:
@@ -239,19 +264,23 @@ def send_admin_alert(category: str, details: str):
         log.error("Admin alert \u0432\u043d\u0435 event loop: %s", text)
 
 
-def main_keyboard():
-    return ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text="\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e"), KeyboardButton(text="\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b")],
-        [KeyboardButton(text="\u2b50 \u041a\u0443\u043f\u0438\u0442\u044c PRO"), KeyboardButton(text="\U0001f464 \u041f\u0440\u043e\u0444\u0438\u043b\u044c")],
-        [KeyboardButton(text="\u2699\ufe0f \u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u043e\u0432")],
-        [KeyboardButton(text="\U0001f6e0 \u0410\u0434\u043c\u0438\u043d")],
-    ], resize_keyboard=True)
+def main_keyboard(show_admin: bool = False):
+    keyboard = [
+        [KeyboardButton(text="🎞 Обработать видео")],
+        [KeyboardButton(text="🎬 Улучшить качество"), KeyboardButton(text="💬 Добавить субтитры")],
+        [KeyboardButton(text="⭐ Купить PRO"), KeyboardButton(text="👤 Профиль")],
+        [KeyboardButton(text="⚙️ Настройки субтитров")],
+    ]
+    if show_admin:
+        keyboard.append([KeyboardButton(text="🛠 Админ")])
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 
 
 def admin_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="\U0001f4ca \u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430", callback_data="admin:stats"), InlineKeyboardButton(text="\U0001f504 \u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0432\u043a\u043b/\u0432\u044b\u043a\u043b", callback_data="admin:toggle_processing")],
-        [InlineKeyboardButton(text="\U0001f465 \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438", callback_data="admin:list_users")],
+        [InlineKeyboardButton(text="📊 Статистика", callback_data="admin:stats"), InlineKeyboardButton(text="🔄 Обработка вкл/выкл", callback_data="admin:toggle_processing")],
+        [InlineKeyboardButton(text="➕ Выдать PRO", callback_data="admin:grant_pro"), InlineKeyboardButton(text="➖ Забрать PRO", callback_data="admin:revoke_pro")],
+        [InlineKeyboardButton(text="⭐ Список PRO", callback_data="admin:list_pro"), InlineKeyboardButton(text="👥 Пользователи", callback_data="admin:list_users")],
     ])
 
 
@@ -277,7 +306,7 @@ def health():
 async def start(message: Message):
     ensure_user(message.from_user.id, message.from_user.username, message.from_user.first_name)
     set_user_action(message.from_user.id, None)
-    await message.answer(welcome_text(), reply_markup=main_keyboard())
+    await message.answer(welcome_text(), reply_markup=main_keyboard(is_admin(message.from_user)))
 
 
 @dp.message(Command("help"))
@@ -310,7 +339,7 @@ async def admin_panel(message: Message):
 
 @dp.message(Command("admin"))
 async def admin_command(message: Message):
-    if message.from_user.id != ADMIN_ID:
+    if not is_admin(message.from_user):
         await message.answer("\U0001f6ab \u0414\u043e\u0441\u0442\u0443\u043f \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443.")
         return
     await admin_panel(message)
@@ -318,73 +347,112 @@ async def admin_command(message: Message):
 
 @dp.callback_query(F.data.startswith("admin:"))
 async def admin_callback(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
-        await callback.answer("\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043f\u0440\u0435\u0449\u0451\u043d", show_alert=True)
+    if not is_admin(callback.from_user):
+        await callback.answer("Доступ запрещён", show_alert=True)
         return
-    if callback.data == "admin:toggle_processing":
-        new = "0" if get_setting("processing_enabled", "1") == "1" else "1"
+
+    action = callback.data
+    if action == "admin:toggle_processing":
+        new = "0" if processing_enabled() else "1"
         set_setting("processing_enabled", new)
         if callback.message:
-            await callback.message.answer(f"\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 {'\u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430' if new == '1' else '\u0432\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u0430'}.")
-    elif callback.data == "admin:stats":
+            await callback.message.answer(f"Обработка {'включена' if new == '1' else 'выключена'}.", reply_markup=admin_keyboard())
+    elif action == "admin:stats":
         if callback.message:
             await admin_panel(callback.message)
-    elif callback.data == "admin:list_users":
+    elif action == "admin:list_users":
         with db_connect() as conn:
-            rows = conn.execute("SELECT user_id,username,stars_balance,pro_until FROM users ORDER BY user_id DESC LIMIT 10").fetchall()
-        text = "\U0001f465 <b>\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438</b>\n" + "\n".join(f"{r['user_id']} | @{r['username'] or '\u2014'} | {'PRO' if r['pro_until'] > int(time.time()) else '\u2014'} | {r['stars_balance']} \u2b50" for r in rows)
+            rows = conn.execute("SELECT user_id,username,stars_balance,pro_until FROM users ORDER BY user_id DESC LIMIT 15").fetchall()
+        body = "\n".join(f"{r['user_id']} | @{r['username'] or '—'} | {'PRO' if int(r['pro_until'] or 0) > int(time.time()) else '—'} | {r['stars_balance']} ⭐" for r in rows)
         if callback.message:
-            await callback.message.answer(text[:3900])
+            await callback.message.answer(("👥 <b>Последние пользователи</b>\n" + (body or "Пользователей пока нет."))[:3900])
+    elif action == "admin:list_pro":
+        with db_connect() as conn:
+            rows = conn.execute("SELECT user_id,username,pro_until FROM users WHERE pro_until>? ORDER BY pro_until DESC LIMIT 50", (int(time.time()),)).fetchall()
+        body = "\n".join(f"{r['user_id']} | @{r['username'] or '—'} | до {datetime.fromtimestamp(int(r['pro_until']), timezone.utc).strftime('%d.%m.%Y %H:%M UTC')}" for r in rows)
+        if callback.message:
+            await callback.message.answer(("⭐ <b>Активные PRO-пользователи</b>\n" + (body or "Активных PRO-подписок нет."))[:3900])
+    elif action in {"admin:grant_pro", "admin:revoke_pro"}:
+        state = "admin_grantpro" if action.endswith("grant_pro") else "admin_revokepro"
+        set_user_action(callback.from_user.id, state)
+        prompt = ("Отправь ID или @username пользователя и количество дней. Пример: <code>@username 30</code> или <code>123456789 30</code>."
+                  if state == "admin_grantpro" else
+                  "Отправь ID или @username пользователя, у которого нужно забрать PRO.")
+        if callback.message:
+            await callback.message.answer(prompt)
     await callback.answer()
 
 
 @dp.message(Command("grantpro"))
 async def grantpro(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("\U0001f6ab \u0414\u043e\u0441\u0442\u0443\u043f \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443.")
+    if not is_admin(message.from_user):
+        await message.answer("⛔ Доступ только владельцу.")
         return
     parts = (message.text or "").split()
-    if len(parts) < 3 or not parts[2].isdigit() or int(parts[2]) < 1:
-        await message.answer("\u0424\u043e\u0440\u043c\u0430\u0442: /grantpro USER_ID \u0414\u041d\u0418")
+    if len(parts) < 2:
+        set_user_action(message.from_user.id, "admin_grantpro")
+        await message.answer("Отправь ID или @username пользователя и количество дней. Пример: <code>@username 30</code>.")
         return
-    target = get_user_by_username_or_id(parts[1])
-    if not target and parts[1].isdigit():
-        ensure_user(int(parts[1]))
-        target = {"user_id": int(parts[1])}
+    identifier = parts[1]
+    days = PRO_DAYS
+    if len(parts) >= 3 and parts[2].isdigit():
+        days = int(parts[2])
+    if days < 1 or days > 3650:
+        await message.answer("Количество дней должно быть от 1 до 3650.")
+        return
+    target = get_user_by_username_or_id(identifier)
+    if not target and identifier.lstrip("@").isdigit():
+        target_id = int(identifier.lstrip("@"))
+        ensure_user(target_id)
+        target = {"user_id": target_id}
     if not target:
-        await message.answer("\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d. \u041f\u0443\u0441\u0442\u044c \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u043d\u0430\u0436\u043c\u0451\u0442 /start.")
+        await message.answer("Пользователь по этому username не найден. Он должен хотя бы раз запустить бота через /start. Для ID можно выдать PRO напрямую.")
         return
-    set_pro_for_user(int(target["user_id"]), int(parts[2]))
-    await message.answer(f"\u2705 PRO \u0432\u044b\u0434\u0430\u043d \u043d\u0430 {parts[2]} \u0434\u043d\u0435\u0439.")
+    set_pro_for_user(int(target["user_id"]), days)
+    await message.answer(f"✅ PRO выдан пользователю <code>{target['user_id']}</code> на {days} дн.")
 
 
 @dp.message(Command("revokepro"))
 async def revokepro(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("\U0001f6ab \u0414\u043e\u0441\u0442\u0443\u043f \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443.")
+    if not is_admin(message.from_user):
+        await message.answer("⛔ Доступ только владельцу.")
         return
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("\u0424\u043e\u0440\u043c\u0430\u0442: /revokepro USER_ID")
+        set_user_action(message.from_user.id, "admin_revokepro")
+        await message.answer("Отправь ID или @username пользователя.")
         return
     target = get_user_by_username_or_id(parts[1])
     if not target:
-        await message.answer("\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.")
+        await message.answer("Пользователь не найден. По username можно найти только тех, кто уже запускал бота.")
         return
     with db_connect() as conn:
         conn.execute("UPDATE users SET pro_until=0 WHERE user_id=?", (target["user_id"],))
         conn.commit()
-    await message.answer("\u2705 PRO \u043e\u0442\u043a\u043b\u044e\u0447\u0451\u043d.")
+    await message.answer(f"✅ PRO отключён у пользователя <code>{target['user_id']}</code>.")
 
 
 @dp.message(Command("cancel"))
 async def cancel(message: Message):
     set_user_action(message.from_user.id, None)
-    await message.answer("\U0001f6d1 \u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u043e.", reply_markup=main_keyboard())
+    await message.answer("\U0001f6d1 \u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u043e.", reply_markup=main_keyboard(is_admin(message.from_user)))
+
+
+@dp.message(F.text == "🎞 Обработать видео")
+async def banner_button(message: Message):
+    if await reject_if_processing_disabled(message):
+        return
+    if find_banner() is None:
+        await message.answer("Не найден файл баннера. Добавь его в assets/banner.mp4 или assets/banner.png.MP4, либо задай BANNER_PATH в Render.")
+        return
+    set_user_action(message.from_user.id, "banner")
+    await message.answer("Отправь видео. Баннер будет наложен на первые 7 секунд, зелёный фон будет удалён. Для отмены — /cancel.")
 
 
 @dp.message(F.text == "\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e")
 async def quality_button(message: Message):
+    if await reject_if_processing_disabled(message):
+        return
     set_user_action(message.from_user.id, None)
     await message.answer("Выбери качество. 2K доступно только с активным PRO:", reply_markup=quality_keyboard())
 
@@ -402,6 +470,11 @@ async def subtitle_settings_button(message: Message):
 @dp.callback_query(F.data.startswith("quality:"))
 async def quality_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
+    if not processing_enabled():
+        if callback.message:
+            await callback.message.answer(PROCESSING_OFF_TEXT)
+        await callback.answer()
+        return
     quality = callback.data.split(":", 1)[1]
     if quality not in {"original", "720", "1080", "2k"}:
         await callback.answer("Неизвестное качество", show_alert=True)
@@ -444,6 +517,8 @@ async def subtitle_color_callback(callback: CallbackQuery):
 
 @dp.message(F.text == "\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b")
 async def subtitles_button(message: Message):
+    if await reject_if_processing_disabled(message):
+        return
     set_user_action(message.from_user.id, "subtitles")
     await message.answer("\U0001f3ac \u041f\u0440\u0438\u0448\u043b\u0438 \u0432\u0438\u0434\u0435\u043e \u0441 \u0440\u0435\u0447\u044c\u044e. \u042f \u0440\u0430\u0441\u043f\u043e\u0437\u043d\u0430\u044e \u0440\u0443\u0441\u0441\u043a\u0443\u044e \u0440\u0435\u0447\u044c \u0438 \u0432\u0441\u0442\u0440\u043e\u044e \u0436\u0438\u0440\u043d\u044b\u0435 \u0431\u0435\u043b\u044b\u0435 \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b \u0441 \u0447\u0451\u0440\u043d\u043e\u0439 \u043e\u0431\u0432\u043e\u0434\u043a\u043e\u0439 \u0447\u0443\u0442\u044c \u043d\u0438\u0436\u0435 \u0441\u0435\u0440\u0435\u0434\u0438\u043d\u044b \u043a\u0430\u0434\u0440\u0430. \u0414\u043b\u044f \u043e\u0442\u043c\u0435\u043d\u044b \u2014 /cancel.")
 
@@ -478,7 +553,7 @@ async def profile_button(message: Message):
 
 @dp.message(F.text == "\U0001f6e0 \u0410\u0434\u043c\u0438\u043d")
 async def admin_button(message: Message):
-    if message.from_user.id != ADMIN_ID:
+    if not is_admin(message.from_user):
         await message.answer("\U0001f6ab \u0414\u043e\u0441\u0442\u0443\u043f \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443.")
         return
     await admin_panel(message)
@@ -581,16 +656,50 @@ def get_output_size(input_path: Path, quality: str) -> tuple[int, int]:
     return even(target_long * width / height), target_long
 
 
+def find_banner() -> Path | None:
+    configured = os.getenv("BANNER_PATH", "").strip()
+    candidates = [Path(configured)] if configured else []
+    candidates.extend([
+        BASE_DIR / "assets" / "banner.mp4",
+        BASE_DIR / "assets" / "banner.png.MP4",
+        BASE_DIR / "assets" / "banner.MP4",
+    ])
+    for candidate in candidates:
+        if candidate.is_file() and candidate.stat().st_size > 0:
+            return candidate
+    return None
+
+
+def video_encode_command(input_path: Path, output_path: Path, video_filter: str, preset: str, crf: int, timeout: int, banner_width: int | None = None) -> list[str]:
+    banner = find_banner()
+    if banner is None:
+        return [
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(input_path),
+            "-vf", video_filter, "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
+            "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(output_path)
+        ]
+
+    width = banner_width or 320
+    # The banner is keyed on green and overlaid at the top-right for its first seven seconds.
+    complex_filter = (
+        f"[0:v]{video_filter}[base];"
+        f"[1:v]chromakey=0x00FF00:0.18:0.08,scale={width}:-2:flags=lanczos,format=rgba[ban];"
+        "[base][ban]overlay=W-w-20:20:enable='between(t,0,7)'[outv]"
+    )
+    return [
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(input_path),
+        "-stream_loop", "-1", "-i", str(banner), "-filter_complex", complex_filter,
+        "-map", "[outv]", "-map", "0:a?", "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
+        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", str(output_path)
+    ]
+
+
 def improve_video(input_path: Path, output_path: Path, quality: str = "original", pro: bool = False):
     width, height = get_output_size(input_path, quality)
-    # Fast software encoding; PRO uses ultrafast preset to reduce CPU time.
     preset = "ultrafast" if pro else "veryfast"
-    filters = f"scale={width}:{height}:flags=fast_bilinear,eq=contrast=1.06:saturation=1.05:brightness=0.005,unsharp=5:5:0.45:3:3:0.0,format=yuv420p"
-    run_command([
-        "ffmpeg", "-hide_banner", "-y", "-i", str(input_path), "-vf", filters,
-        "-c:v", "libx264", "-preset", preset, "-crf", "21", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(output_path)
-    ], timeout=1800)
+    filters = f"scale={width}:{height}:flags=lanczos,hqdn3d=1.2:1.2:4:4,eq=contrast=1.08:saturation=1.07:brightness=0.004,unsharp=5:5:0.60:3:3:0.0,format=yuv420p"
+    banner_width = max(180, even(width * 0.28))
+    run_command(video_encode_command(input_path, output_path, filters, preset, 21, 1800, banner_width), timeout=1800)
 
 
 def get_whisper_model(model_name: str):
@@ -606,10 +715,11 @@ def get_whisper_model(model_name: str):
 
 
 def transcribe_to_srt(input_path: Path, work_dir: Path) -> Path:
-    audio_path = work_dir / "audio.wav"
+    # Mono 16 kHz FLAC reduces temporary storage/I/O without losing audio quality.
+    audio_path = work_dir / "audio.flac"
     run_command([
         "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(input_path),
-        "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(audio_path)
+        "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000", "-c:a", "flac", "-compression_level", "3", str(audio_path)
     ], timeout=600)
     if not audio_path.exists() or audio_path.stat().st_size < 1000:
         raise RuntimeError("В видео не найден слышимый аудиотрек. Проверь, что в нём есть речь.")
@@ -664,15 +774,12 @@ def add_subtitles(input_path: Path, output_path: Path, work_dir: Path, user_id: 
         f"BorderStyle=1,Outline=3,Shadow=1,Alignment=2,MarginV={margin_v}"
     )
     preset = "ultrafast" if pro else "veryfast"
-    run_command([
-        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(input_path),
-        "-vf", f"subtitles='{srt_path_filter}':force_style='{style}'",
-        "-c:v", "libx264", "-preset", preset, "-crf", "21", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(output_path)
-    ], timeout=2400)
+    filters = f"hqdn3d=0.8:0.8:3:3,eq=contrast=1.04:saturation=1.04,subtitles='{srt_path_filter}':force_style='{style}',format=yuv420p"
+    banner_width = max(180, even(width * 0.28))
+    run_command(video_encode_command(input_path, output_path, filters, preset, 22, 2400, banner_width), timeout=2400)
 
 
-async def process_video(message: Message, action: str):
+async def _process_video_impl(message: Message, action: str):
     user_id = message.from_user.id
     file_obj = message.video or message.document
     if file_obj is None:
@@ -685,9 +792,6 @@ async def process_video(message: Message, action: str):
     if file_size and file_size > MAX_VIDEO_MB * 1024 * 1024:
         await message.answer(f"\u0424\u0430\u0439\u043b \u0441\u043b\u0438\u0448\u043a\u043e\u043c \u0431\u043e\u043b\u044c\u0448\u043e\u0439. \u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439 \u0440\u0430\u0437\u043c\u0435\u0440 \u0434\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u0431\u043e\u0442\u0430: {MAX_VIDEO_MB} \u041c\u0411.")
         set_user_action(user_id, None)
-        return
-    if get_setting("processing_enabled", "1") != "1" and user_id != ADMIN_ID:
-        await message.answer("\u23f8 \u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043e\u0442\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c.")
         return
 
     pro = is_pro_active(user_id)
@@ -716,6 +820,15 @@ async def process_video(message: Message, action: str):
             await asyncio.to_thread(improve_video, source, output, quality, pro)
             label = {"original": "оригинальное разрешение", "720": "720p", "1080": "1080p", "2k": "2K"}.get(quality, quality)
             caption = f"✅ Готово! Видео обработано в режиме {label}. Масштабирование не восстанавливает детали, которых не было в оригинале."
+        elif action == "banner":
+            banner = find_banner()
+            if banner is None:
+                raise RuntimeError("Не найден файл баннера. Добавь assets/banner.mp4 или assets/banner.png.MP4 либо задай BANNER_PATH.")
+            width, _ = probe_video(source)
+            filters = "format=yuv420p"
+            await message.answer("🎞 Накладываю баннер и удаляю зелёный фон…")
+            await asyncio.to_thread(run_command, video_encode_command(source, output, filters, "veryfast", 22, 1800, max(180, even(width * 0.28))), 1800)
+            caption = "✅ Готово! Баннер добавлен на первые 7 секунд, зелёный фон удалён."
         elif action == "subtitles":
             await message.answer("📝 Распознаю речь и встраиваю субтитры. На первом запуске может потребоваться больше времени для загрузки модели.")
             await asyncio.to_thread(add_subtitles, source, output, work_dir, user_id, pro)
@@ -746,25 +859,83 @@ async def process_video(message: Message, action: str):
         set_user_action(user_id, None)
 
 
+async def process_video(message: Message, action: str):
+    # Only one video runs at a time. Queued tasks re-check the persistent switch after acquiring the lock.
+    if not processing_enabled():
+        set_user_action(message.from_user.id, None)
+        await message.answer(PROCESSING_OFF_TEXT)
+        return
+    async with PROCESSING_LOCK:
+        if not processing_enabled():
+            set_user_action(message.from_user.id, None)
+            await message.answer(PROCESSING_OFF_TEXT)
+            return
+        await _process_video_impl(message, action)
+
+
 @dp.message(F.video | F.document)
 async def media_handler(message: Message):
     user_id = message.from_user.id
     ensure_user(user_id, message.from_user.username, message.from_user.first_name)
+    if not processing_enabled():
+        await message.answer(PROCESSING_OFF_TEXT)
+        return
     action = get_user_action(user_id)
-    if (action and action.startswith("quality:")) or action == "subtitles":
+    if (action and action.startswith("quality:")) or action in {"subtitles", "banner"}:
         await process_video(message, action)
         return
-    await message.answer("\u0412\u0438\u0434\u0435\u043e \u043f\u043e\u043b\u0443\u0447\u0438\u043b! \u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0432\u044b\u0431\u0435\u0440\u0438 \u0432 \u043c\u0435\u043d\u044e \u00ab\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e\u00bb \u0438\u043b\u0438 \u00ab\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b\u00bb, \u0437\u0430\u0442\u0435\u043c \u043e\u0442\u043f\u0440\u0430\u0432\u044c \u0432\u0438\u0434\u0435\u043e \u0435\u0449\u0451 \u0440\u0430\u0437.", reply_markup=main_keyboard())
+    await message.answer("\u0412\u0438\u0434\u0435\u043e \u043f\u043e\u043b\u0443\u0447\u0438\u043b! \u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0432\u044b\u0431\u0435\u0440\u0438 \u0432 \u043c\u0435\u043d\u044e \u00ab\U0001f3ac \u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e\u00bb \u0438\u043b\u0438 \u00ab\U0001f4ac \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0443\u0431\u0442\u0438\u0442\u0440\u044b\u00bb, \u0437\u0430\u0442\u0435\u043c \u043e\u0442\u043f\u0440\u0430\u0432\u044c \u0432\u0438\u0434\u0435\u043e \u0435\u0449\u0451 \u0440\u0430\u0437.", reply_markup=main_keyboard(is_admin(message.from_user)))
 
 
 @dp.message(F.text)
 async def fallback_text(message: Message):
-    text = (message.text or "").strip().lower()
-    if text in {"\u043f\u0440\u0438\u0432\u0435\u0442", "\u043a\u0443", "hello", "hi", "start"}:
-        await message.answer(welcome_text(), reply_markup=main_keyboard())
-    else:
-        await message.answer("\u0412\u044b\u0431\u0435\u0440\u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043a\u043d\u043e\u043f\u043a\u043e\u0439 \u043c\u0435\u043d\u044e \u0438\u043b\u0438 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439 /help.", reply_markup=main_keyboard())
+    raw = (message.text or "").strip()
+    state = get_user_action(message.from_user.id)
 
+    if state in {"admin_grantpro", "admin_revokepro"}:
+        if not is_admin(message.from_user):
+            set_user_action(message.from_user.id, None)
+            await message.answer("⛔ Доступ запрещён.")
+            return
+        parts = raw.split()
+        if not parts:
+            await message.answer("Отправь ID или @username.")
+            return
+        identifier = parts[0]
+        target = get_user_by_username_or_id(identifier)
+        if not target and identifier.lstrip("@").isdigit() and state == "admin_grantpro":
+            target_id = int(identifier.lstrip("@"))
+            ensure_user(target_id)
+            target = {"user_id": target_id}
+        if not target:
+            await message.answer("Пользователь не найден. По username можно найти только тех, кто уже запускал бота. Попробуй снова или /cancel.")
+            return
+        target_id = int(target["user_id"])
+        if state == "admin_grantpro":
+            days = PRO_DAYS
+            if len(parts) > 1:
+                if not parts[1].isdigit():
+                    await message.answer("Количество дней должно быть числом. Пример: @username 30")
+                    return
+                days = int(parts[1])
+            if days < 1 or days > 3650:
+                await message.answer("Количество дней должно быть от 1 до 3650.")
+                return
+            set_pro_for_user(target_id, days)
+            await message.answer(f"✅ PRO выдан пользователю <code>{target_id}</code> на {days} дн.", reply_markup=admin_keyboard())
+        else:
+            with db_connect() as conn:
+                conn.execute("UPDATE users SET pro_until=0 WHERE user_id=?", (target_id,))
+                conn.commit()
+            await message.answer(f"✅ PRO отключён у пользователя <code>{target_id}</code>.", reply_markup=admin_keyboard())
+        set_user_action(message.from_user.id, None)
+        return
+
+    text = raw.lower()
+    if text in {"привет", "ку", "hello", "hi", "start"}:
+        await message.answer(welcome_text(), reply_markup=main_keyboard(is_admin(message.from_user)))
+    else:
+        await message.answer("Выбери действие кнопкой меню или используй /help.", reply_markup=main_keyboard(is_admin(message.from_user)))
 
 async def bot_main():
     ensure_db()
